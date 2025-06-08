@@ -1,0 +1,37 @@
+# config/config.yaml
+database:
+  dialect: postgresql
+  user: postgres
+  password: admin
+  host: localhost
+  port: 5432
+  database: postgres
+
+# file_path: data/sales_transactions.csv
+
+files_to_tables:
+  - file_path: data/sales_transactions.csv
+    schema: etl_assesment_data
+    table: sales
+
+
+mock_data:
+  - file_path: data/sales_transactions.csv
+    num_rows: 10000
+    columns:
+      transaction_id: random_unique_int_1_9999999
+      customer_id: random_int_1000_1100
+      product_id: random_int_200_250
+      quantity: random_int_1_10
+      timestamp: datetime_now_minus_random_minutes_0_100000
+
+
+  - file_path: data/sales_transactions_v1.csv
+    num_rows: 10000
+    columns:
+      transaction_id: int_sequence
+      customer_id: random_int_1000_1100
+      product_id: random_int_200_250
+      quantity: random_int_1_10
+      timestamp: datetime_now_minus_random_minutes_0_100000
+
