@@ -1,6 +1,6 @@
-from src.utils import generate_mock_data, setup_logging, load_config
-from src.load import get_engine, load_data
-from src.extract import extract_csv 
+from utils.utils import generate_mock_data, setup_logging, load_config
+from load.load import get_engine, load_data
+from extract.extract import extract_csv 
 from sqlalchemy import text  # Esto es necesario para ejecutar "SELECT 1"
 import logging
 

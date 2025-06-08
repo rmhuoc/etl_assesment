@@ -219,3 +219,23 @@ DETAIL:  Failing row contains (25473, null, 1052, 229, 6, 2025-04-02 00:13:20.30
 2025-06-08 13:56:07,114:INFO:Successfully read data/sales_transactions.csv using encoding: ascii
 2025-06-08 13:56:07,934:INFO:Loaded data from data/sales_transactions.csv into etl_assesment_data.sales
 2025-06-08 13:56:07,934:INFO:ETL process completed successfully.
+2025-06-08 16:14:14,714:INFO:Configuration loaded successfully from config/config.yaml
+2025-06-08 16:14:14,986:INFO:Generated mock data saved to data/sales_transactions.csv with 10000 rows.
+2025-06-08 16:14:15,190:INFO:Generated mock data saved to data/sales_transactions_v1.csv with 10000 rows.
+2025-06-08 16:14:15,531:INFO:Connection to database OK and verified.
+2025-06-08 16:14:15,531:INFO:Processing file data/sales_transactions.csv into etl_assesment_data.sales
+2025-06-08 16:14:15,711:INFO:Detected encoding for data/sales_transactions.csv: ascii (confidence: 1.0)
+2025-06-08 16:14:15,711:INFO:Trying read data/sales_transactions.csv using encoding: ascii
+2025-06-08 16:14:15,743:INFO:Successfully read data/sales_transactions.csv using encoding: ascii
+2025-06-08 16:14:16,517:INFO:Loaded data from data/sales_transactions.csv into etl_assesment_data.sales
+2025-06-08 16:14:16,517:INFO:ETL process completed successfully.
+2025-06-08 16:16:36,221:INFO:Configuration loaded successfully from config/config.yaml
+2025-06-08 16:16:36,295:INFO:Generated mock data saved to data/sales_transactions.csv with 10000 rows.
+2025-06-08 16:16:36,359:INFO:Generated mock data saved to data/sales_transactions_v1.csv with 10000 rows.
+2025-06-08 16:16:36,408:INFO:Connection to database OK and verified.
+2025-06-08 16:16:36,408:INFO:Processing file data/sales_transactions.csv into etl_assesment_data.sales
+2025-06-08 16:16:36,541:INFO:Detected encoding for data/sales_transactions.csv: ascii (confidence: 1.0)
+2025-06-08 16:16:36,541:INFO:Trying read data/sales_transactions.csv using encoding: ascii
+2025-06-08 16:16:36,551:INFO:Successfully read data/sales_transactions.csv using encoding: ascii
+2025-06-08 16:16:37,324:INFO:Loaded data from data/sales_transactions.csv into etl_assesment_data.sales
+2025-06-08 16:16:37,324:INFO:ETL process completed successfully.

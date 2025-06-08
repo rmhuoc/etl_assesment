@@ -7,7 +7,11 @@ database:
   port: 5432
   database: postgres
 
-# file_path: data/sales_transactions.csv
+
+load_process:
+  schema: loads
+  table_name: etl_load_log
+  
 
 files_to_tables:
   - file_path: data/sales_transactions.csv
