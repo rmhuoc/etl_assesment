@@ -11,13 +11,20 @@ database:
 load_process:
   schema: loads
   table_name: etl_load_log
+  sequence_name: etl_process_seq
   
+encryption:
+  key_path: "config/secret.key"
+  columns_to_encrypt:
+    - customer_id
+    - product_id
+
+
 
 files_to_tables:
   - file_path: data/sales_transactions.csv
     schema: etl_assesment_data
     table: sales
-
 
 mock_data:
   - file_path: data/sales_transactions.csv
