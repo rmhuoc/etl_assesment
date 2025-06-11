@@ -1,0 +1,52 @@
+🔷 Intro: Vision
+
+Allianz wants to become a data-driven company. But what does that really mean?
+It means empowering the business to make smarter, faster, and more confident decisions — decisions based not on intuition, but on trusted, analyzed, and timely data.
+
+To achieve this, Allianz needs a modern, cloud-based analytics architecture — scalable, secure, and built to support advanced analytics and automation at scale.
+🎯 Business Objectives
+
+What are the main targets that the business wants to accomplish through this transformation?
+
+    Grow the top line above market: by identifying new revenue opportunities through customer and market insights.
+
+    Achieve technical excellence to increase business margin: by optimizing operations and reducing inefficiencies.
+
+    Deliver best-in-class service levels: by ensuring data quality and availability to support real-time customer interactions.
+
+    Enable process automation: by laying the groundwork for AI and machine learning initiatives that automate repetitive and manual tasks.
+
+📈 Business Impact
+
+So, what’s the expected impact if we successfully meet these targets?
+
+    Up to 20% improvement in strategic reporting efficiency, freeing up time for value-added analysis.
+
+    A 30% reduction in data operations costs, by streamlining infrastructure and eliminating redundancy.
+
+    A drastic reduction in time-to-insight — from days to minutes, thanks to a modern data pipeline and self-service analytics.
+
+    Enablement of AI-driven models, including predictive analytics for sales forecasting and customer churn prevention.
+
+💰 Estimated Investment
+
+To support this transformation, the estimated investment includes:
+
+    €1M allocated to the cloud platform infrastructure (based on Azure Data Platform).
+
+    €2M dedicated to external development and consultancy services, including architecture design, implementation, and knowledge transfer.
+
+👥 Delivery Team
+
+The initial development team will consist of:
+
+    3 senior data architects with deep expertise in the Azure Data Platform (covering Synapse, ADLS Gen2, Data Factory, and security).
+
+    3 mid-level data engineers, responsible for building data pipelines, implementing data quality rules, and supporting ongoing operations.
+
+✅ Conclusion (optional)
+
+With this strategy, Allianz will not only modernize its data landscape, but also unlock new opportunities for innovation, efficiency, and competitive advantage.
+
+
+

@@ -18,8 +18,10 @@ def extract_csv(path):
     for enc in tried_encodings:
         try:
             logging.info(f"Trying read {path} using encoding: {enc}")
-            df = pd.read_csv(path, index_col=0, sep=',', encoding='latin-1')  
+            df = pd.read_csv(path, sep=',', encoding='latin-1')  
             logging.info(f"Successfully read {path} using encoding: {enc}")
+            #eliminar
+            logging.info(f"Index name extract: {df.index.name}")
             return df
         except UnicodeDecodeError as e:
             logging.warning(f"Unicode decode error with encoding '{enc}': {e}")

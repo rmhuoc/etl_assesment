@@ -1,0 +1,34 @@
+2025-06-08 21:31:15,172:INFO:Configuration loaded successfully from config/config.yaml
+2025-06-08 21:31:15,172:INFO:Starting ETL process...
+2025-06-08 21:31:15,209:INFO:ETL process started with process_id=20
+2025-06-08 21:31:15,284:INFO:Generated mock data saved to data/sales_transactions.csv with 10000 rows.
+2025-06-08 21:31:15,352:INFO:Generated mock data saved to data/sales_transactions_v1.csv with 10000 rows.
+2025-06-08 21:31:15,357:INFO:Connection to database OK and verified.
+2025-06-08 21:31:15,357:INFO:Processing file data/sales_transactions.csv into etl_assesment_data.sales
+2025-06-08 21:31:15,496:INFO:Detected encoding for data/sales_transactions.csv: ascii (confidence: 1.0)
+2025-06-08 21:31:15,497:INFO:Trying read data/sales_transactions.csv using encoding: ascii
+2025-06-08 21:31:15,508:INFO:Successfully read data/sales_transactions.csv using encoding: ascii
+2025-06-08 21:31:15,508:INFO:Index name: transaction_id
+2025-06-08 21:31:15,508:INFO:Index name: transaction_id
+2025-06-08 21:31:15,508:INFO:Index name: transaction_id
+2025-06-08 21:31:16,377:INFO:Loaded 10000 records into etl_assesment_data.sales (process_id=None)
+2025-06-08 21:31:16,377:ERROR:ETL failed (process_id=None): cannot access local variable 'e' where it is not associated with a value
+2025-06-08 21:31:16,377:ERROR:ETL failed (process_id=20): cannot access local variable 'e' where it is not associated with a value
+2025-06-08 21:33:56,000:INFO:Configuration loaded successfully from config/config.yaml
+2025-06-08 21:33:56,000:INFO:Starting ETL process...
+2025-06-08 21:33:56,039:INFO:ETL process started with process_id=21
+2025-06-08 21:33:56,115:INFO:Generated mock data saved to data/sales_transactions.csv with 10000 rows.
+2025-06-08 21:33:56,185:INFO:Generated mock data saved to data/sales_transactions_v1.csv with 10000 rows.
+2025-06-08 21:33:56,190:INFO:Connection to database OK and verified.
+2025-06-08 21:33:56,190:INFO:Processing file data/sales_transactions.csv into etl_assesment_data.sales
+2025-06-08 21:33:56,321:INFO:Detected encoding for data/sales_transactions.csv: ascii (confidence: 1.0)
+2025-06-08 21:33:56,321:INFO:Trying read data/sales_transactions.csv using encoding: ascii
+2025-06-08 21:33:56,332:INFO:Successfully read data/sales_transactions.csv using encoding: ascii
+2025-06-08 21:33:56,332:INFO:Index name: transaction_id
+2025-06-08 21:33:56,332:INFO:Index name: transaction_id
+2025-06-08 21:33:56,332:INFO:Index name: transaction_id
+2025-06-08 21:33:57,190:INFO:Loaded 10000 records into etl_assesment_data.sales (process_id=None)
+2025-06-08 21:33:57,190:INFO:Index name: None
+2025-06-08 21:33:58,562:WARNING:Duplicate records detected (process_id=21): Key (transaction_id, customer_id, product_id, quantity, "timestamp")=(9422195, 1090, 247, 5, 2025-04-17 17:44:56.039701) already exists.
+2025-06-08 21:33:58,562:INFO:Loaded 10000 records from data/sales_transactions.csv into etl_assesment_data.sales
+2025-06-08 21:33:58,562:INFO:ETL process completed successfully process_id=21. Total records loaded: 10000

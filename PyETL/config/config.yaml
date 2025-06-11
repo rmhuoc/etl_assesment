@@ -21,10 +21,18 @@ encryption:
 
 
 
-files_to_tables:
+files_to_tables_tmp:
   - file_path: data/sales_transactions.csv
     schema: etl_assesment_data
-    table: sales
+    table: sales_tmp
+
+files_to_tables_inc:
+  - tmp_schema: etl_assesment_data
+    tmp_table: sales_tmp
+    target_schema: etl_assesment_data
+    target_table: sales
+    unique_keys: ["transaction_id", "customer_id", "product_id", "quantity", "timestamp"]
+
 
 mock_data:
   - file_path: data/sales_transactions.csv

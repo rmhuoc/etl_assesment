@@ -46,12 +46,16 @@ import psycopg2
 
 def load_data(df, engine, table_name, schema=None, process_id=None):
     try:
-        logging.info(f"Index name: {df.index.name}")
-        df.reset_index(inplace=True)
+        logging.info(f"Index name load: {df.index.name}")
+        df.reset_index(drop=True,inplace=True)
         df = df.copy()
         if 'index' in df.columns:
             df.drop(columns=['index'], inplace=True)
-
+            
+        if process_id is not None:
+            df['process_id'] = process_id
+            logging.info(f"Added process_id={process_id} to DataFrame before load.")
+       
         df.to_sql(
             name=table_name,
             con=engine,
@@ -65,13 +69,43 @@ def load_data(df, engine, table_name, schema=None, process_id=None):
     except IntegrityError as e:
         orig = getattr(e.orig, 'diag', None)
         if isinstance(e.orig, psycopg2.errors.UniqueViolation):
-            detalle = orig.message_detail if orig and orig.message_detail else str(e)
-            logging.warning(f"Duplicate records detected (process_id={process_id}): {detalle}")
+            detail = orig.message_detail if orig and orig.message_detail else str(e)
+            logging.warning(f"Duplicate records detected (process_id={process_id}): {detail}")
         elif isinstance(e.orig, psycopg2.errors.CheckViolation):
-            detalle = orig.message_detail if orig and orig.message_detail else str(e)
-            logging.warning(f"Constraint violation (e.g., quantity >= 1) detected (process_id={process_id}): {detalle}")
+            detail = orig.message_detail if orig and orig.message_detail else str(e)
+            logging.warning(f"Constraint violation (e.g., quantity >= 1) detected (process_id={process_id}): {detail}")
         else:
             logging.error(f"Database integrity error (process_id={process_id}): {str(e)}")
     except Exception as e:
         logging.error(f"ETL failed (process_id={process_id}): {e}")
         raise
+        
+        
+def incremental_insert(engine, tmp_schema, tmp_table, target_schema, target_table, unique_keys):
+    try:
+        # Construye la condición de exclusión
+        join_conditions = " AND ".join([
+            f"t.{key} = s.{key}" for key in unique_keys
+        ])
+
+        # Crea una lista de columnas (asumiendo que ambas tablas tienen el mismo esquema)
+        with engine.connect() as conn:
+            result = conn.execute(text(f"SELECT * FROM {tmp_schema}.{tmp_table} LIMIT 0"))
+            columns = result.keys()
+            column_list = ", ".join(columns)
+
+            insert_sql = f"""
+                INSERT INTO {target_schema}.{target_table} ({column_list})
+                SELECT {column_list} FROM {tmp_schema}.{tmp_table} s
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM {target_schema}.{target_table} t
+                    WHERE {join_conditions}
+                )
+            """
+            conn.execute(text(insert_sql))
+            logging.info(f"Incremental insert completed from {tmp_schema}.{tmp_table} to {target_schema}.{target_table}")
+
+    except Exception as e:
+        logging.error(f"Error during incremental insert from {tmp_schema}.{tmp_table} to {target_schema}.{target_table}: {e}")
+        raise
+

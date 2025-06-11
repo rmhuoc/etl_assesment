@@ -10,8 +10,9 @@ import logging
 from logging.handlers import TimedRotatingFileHandler
 import os
 import yaml
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text,inspect, Column, Table, MetaData, String
 import logging
+from sqlalchemy.exc import SQLAlchemyError
 
 def generate_mock_data(config):
     for dataset in config.get("mock_data", []):
@@ -137,3 +138,44 @@ def load_config(path='config/config.yaml'):
         logging.exception(f"Unexpected error loading configuration from {path}")
         raise
 
+
+def ensure_table_exists(df, engine, schema, table_name):
+    """
+    Crea la tabla si no existe en la base de datos usando el esquema del DataFrame.
+    """
+    inspector = inspect(engine)
+    if not inspector.has_table(table_name, schema=schema):
+        logging.info(f"La tabla {schema}.{table_name} no existe. Se va a crear.")
+        df.head(0).to_sql(
+            name=table_name,
+            con=engine,
+            schema=schema,
+            if_exists='replace',
+            index=False
+        )
+        logging.info(f"Tabla {schema}.{table_name} creada correctamente.")
+    else:
+        logging.info(f"La tabla {schema}.{table_name} ya existe.")
+
+def add_missing_columns(df, engine, schema, table_name):
+    """
+    Añade columnas que estén en el DataFrame pero no en la tabla de destino.
+    """
+    metadata = MetaData(schema=schema)
+    table = Table(table_name, metadata, autoload_with=engine)
+    db_columns = {col.name for col in table.columns}
+    df_columns = set(df.columns)
+
+    missing_columns = df_columns - db_columns
+    if not missing_columns:
+        return
+
+    logging.info(f"Columnas faltantes en {schema}.{table_name}: {missing_columns}")
+    for col in missing_columns:
+        try:
+            alter_sql = f'ALTER TABLE "{schema}"."{table_name}" ADD COLUMN "{col}" TEXT'
+            with engine.begin() as conn:
+                conn.execute(alter_sql)
+            logging.info(f"Columna '{col}' añadida a {schema}.{table_name}.")
+        except SQLAlchemyError as e:
+            logging.error(f"No se pudo añadir la columna '{col}': {e}")
