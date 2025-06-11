@@ -1,12 +1,11 @@
 from utils.utils import generate_mock_data, setup_logging, load_config, ensure_table_exists, add_missing_columns
 from utils.etl_monitor import start_etl_process, end_etl_process
-from load.load import get_engine, load_data
+from load.load import get_engine, load_data, incremental_insert
 from extract.extract import extract_csv 
 from sqlalchemy import text  
 from datetime import datetime
 from transform.transform import encrypt_dataframe
 import logging
-
 
 
 def main():
@@ -34,28 +33,28 @@ def main():
         logging.info("Connection to database OK and verified.")
 
         # Process files into tmp created according config
-       for file_entry in config.get('files_to_tables_tmp', []):
-           file_path = file_entry['file_path']
-           schema = file_entry['schema']
-           table = file_entry['table']
+        for file_entry in config.get('files_to_tables_tmp', []):
+            file_path = file_entry['file_path']
+            schema = file_entry['schema']
+            table = file_entry['table']
+            full_table_name = f"{schema}.{table}"
 
-           full_table_name = f"{schema}.{table}"
-    
-           # Truncar tabla temporal antes de la carga
-          with engine.connect() as conn:
-              logging.info(f"Truncating temporary table {full_table_name}")
-              conn.execute(text(f"TRUNCATE TABLE {full_table_name}"))
+            # Truncar tabla temporal antes de la carga
+            with engine.connect() as conn:
+                logging.info(f"Truncating temporary table {full_table_name}")
+                conn.execute(text(f"TRUNCATE TABLE {full_table_name}"))
 
-          logging.info(f"Processing file {file_path} into {full_table_name}")
-          df = extract_csv(file_path)
-          df_encrypted = encrypt_dataframe(df, config['encryption'])
+            logging.info(f"Processing file {file_path} into {full_table_name}")
+            df = extract_csv(file_path)
+            df_encrypted = encrypt_dataframe(df, config['encryption'])
+            logging.info(f"Data encrypted {file_path}")
 
-          load_data(df_encrypted, engine, table, schema=schema, process_id=process_id)
+            load_data(df_encrypted, engine, table, schema=schema, process_id=process_id)
 
-          loaded_count = len(df)
-          total_loaded += loaded_count
+            loaded_count = len(df_encrypted)
+            total_loaded += loaded_count
 
-          logging.info(f"Loaded {loaded_count} records from {file_path} into {full_table_name}")
+            logging.info(f"Loaded {loaded_count} records from {file_path} into {full_table_name}")
 
         # Load from tmp to final
         for inc_entry in config.get('files_to_tables_inc', []):
@@ -68,7 +67,6 @@ def main():
             logging.info(f"Performing incremental load from {tmp_schema}.{tmp_table} to {target_schema}.{target_table}")
             incremental_insert(engine, tmp_schema, tmp_table, target_schema, target_table, unique_keys)
 
-
         logging.info(f"ETL process completed successfully process_id={process_id}. Total records loaded: {total_loaded}")
 
     except Exception as e:
@@ -78,6 +76,7 @@ def main():
     finally:
         if process_id is not None:
             end_etl_process(engine, config, process_id, total_loaded, error_message)
+
 
 if __name__ == "__main__":
     main()

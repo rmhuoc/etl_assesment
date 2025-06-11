@@ -1,78 +1,28 @@
-2025-06-10 16:02:04,668:INFO:Configuration loaded successfully from config/config.yaml
-2025-06-10 16:02:04,669:INFO:Starting ETL process...
-2025-06-10 16:02:04,711:INFO:ETL process started with process_id=29
-2025-06-10 16:02:04,794:INFO:Generated mock data saved to data/sales_transactions.csv with 10000 rows.
-2025-06-10 16:02:04,868:INFO:Generated mock data saved to data/sales_transactions_v1.csv with 10000 rows.
-2025-06-10 16:02:04,873:INFO:Connection to database OK and verified.
-2025-06-10 16:02:04,873:INFO:Processing file data/sales_transactions_v1.csv into etl_assesment_data.sales1
-2025-06-10 16:02:05,019:INFO:Detected encoding for data/sales_transactions_v1.csv: ascii (confidence: 1.0)
-2025-06-10 16:02:05,020:INFO:Trying read data/sales_transactions_v1.csv using encoding: ascii
-2025-06-10 16:02:05,033:INFO:Successfully read data/sales_transactions_v1.csv using encoding: ascii
-2025-06-10 16:02:05,033:INFO:Index name extract: None
-2025-06-10 16:02:05,033:INFO:Index name main: None
-2025-06-10 16:02:05,033:INFO:Index name main1: None
-2025-06-10 16:02:05,040:INFO:La tabla etl_assesment_data.sales1 ya existe.
-2025-06-10 16:02:05,087:INFO:Index name load: None
-2025-06-10 16:02:05,830:INFO:Loaded 10000 records into etl_assesment_data.sales1 (process_id=29)
-2025-06-10 16:02:05,830:INFO:Loaded 10000 records from data/sales_transactions_v1.csv into etl_assesment_data.sales1
-2025-06-10 16:02:05,830:INFO:ETL process completed successfully process_id=29. Total records loaded: 10000
-2025-06-10 16:04:10,725:INFO:Configuration loaded successfully from config/config.yaml
-2025-06-10 16:04:10,726:INFO:Starting ETL process...
-2025-06-10 16:04:10,790:INFO:ETL process started with process_id=30
-2025-06-10 16:04:10,890:INFO:Generated mock data saved to data/sales_transactions.csv with 10000 rows.
-2025-06-10 16:04:11,067:INFO:Generated mock data saved to data/sales_transactions_v1.csv with 10000 rows.
-2025-06-10 16:04:11,073:INFO:Connection to database OK and verified.
-2025-06-10 16:04:11,073:INFO:Processing file data/sales_transactions.csv into etl_assesment_data.sales
-2025-06-10 16:04:11,334:INFO:Detected encoding for data/sales_transactions.csv: ascii (confidence: 1.0)
-2025-06-10 16:04:11,335:INFO:Trying read data/sales_transactions.csv using encoding: ascii
-2025-06-10 16:04:11,359:INFO:Successfully read data/sales_transactions.csv using encoding: ascii
-2025-06-10 16:04:11,359:INFO:Index name extract: None
-2025-06-10 16:04:11,359:INFO:Index name main: None
-2025-06-10 16:04:11,359:INFO:Index name main1: None
-2025-06-10 16:04:11,369:INFO:La tabla etl_assesment_data.sales ya existe.
-2025-06-10 16:04:11,417:INFO:Index name load: None
-2025-06-10 16:04:13,063:INFO:Loaded 10000 records into etl_assesment_data.sales (process_id=30)
-2025-06-10 16:04:13,063:INFO:Loaded 10000 records from data/sales_transactions.csv into etl_assesment_data.sales
-2025-06-10 16:04:13,063:INFO:Processing file data/sales_transactions_v1.csv into etl_assesment_data.sales1
-2025-06-10 16:04:13,337:INFO:Detected encoding for data/sales_transactions_v1.csv: ascii (confidence: 1.0)
-2025-06-10 16:04:13,337:INFO:Trying read data/sales_transactions_v1.csv using encoding: ascii
-2025-06-10 16:04:13,355:INFO:Successfully read data/sales_transactions_v1.csv using encoding: ascii
-2025-06-10 16:04:13,355:INFO:Index name extract: None
-2025-06-10 16:04:13,355:INFO:Index name main: None
-2025-06-10 16:04:13,356:INFO:Index name main1: None
-2025-06-10 16:04:13,361:INFO:La tabla etl_assesment_data.sales1 ya existe.
-2025-06-10 16:04:13,382:INFO:Index name load: None
-2025-06-10 16:04:14,851:INFO:Loaded 10000 records into etl_assesment_data.sales1 (process_id=30)
-2025-06-10 16:04:14,851:INFO:Loaded 10000 records from data/sales_transactions_v1.csv into etl_assesment_data.sales1
-2025-06-10 16:04:14,851:INFO:ETL process completed successfully process_id=30. Total records loaded: 20000
-2025-06-10 16:26:30,826:INFO:Configuration loaded successfully from config/config.yaml
-2025-06-10 16:26:30,827:INFO:Starting ETL process...
-2025-06-10 16:26:30,879:INFO:ETL process started with process_id=31
-2025-06-10 16:26:30,973:INFO:Generated mock data saved to data/sales_transactions.csv with 10000 rows.
-2025-06-10 16:26:31,048:INFO:Generated mock data saved to data/sales_transactions_v1.csv with 10000 rows.
-2025-06-10 16:26:31,054:INFO:Connection to database OK and verified.
-2025-06-10 16:26:31,054:INFO:Processing file data/sales_transactions.csv into etl_assesment_data.sales
-2025-06-10 16:26:31,206:INFO:Detected encoding for data/sales_transactions.csv: ascii (confidence: 1.0)
-2025-06-10 16:26:31,206:INFO:Trying read data/sales_transactions.csv using encoding: ascii
-2025-06-10 16:26:31,219:INFO:Successfully read data/sales_transactions.csv using encoding: ascii
-2025-06-10 16:26:31,219:INFO:Index name extract: None
-2025-06-10 16:26:31,219:INFO:Index name main: None
-2025-06-10 16:26:31,219:INFO:Index name main1: None
-2025-06-10 16:26:31,227:INFO:La tabla etl_assesment_data.sales ya existe.
-2025-06-10 16:26:31,291:INFO:Index name load: None
-2025-06-10 16:26:31,297:INFO:Added process_id=31 to DataFrame before load.
-2025-06-10 16:26:32,616:INFO:Loaded 10000 records into etl_assesment_data.sales (process_id=31)
-2025-06-10 16:26:32,617:INFO:Loaded 10000 records from data/sales_transactions.csv into etl_assesment_data.sales
-2025-06-10 16:26:32,617:INFO:Processing file data/sales_transactions_v1.csv into etl_assesment_data.sales1
-2025-06-10 16:26:32,851:INFO:Detected encoding for data/sales_transactions_v1.csv: ascii (confidence: 1.0)
-2025-06-10 16:26:32,851:INFO:Trying read data/sales_transactions_v1.csv using encoding: ascii
-2025-06-10 16:26:32,870:INFO:Successfully read data/sales_transactions_v1.csv using encoding: ascii
-2025-06-10 16:26:32,870:INFO:Index name extract: None
-2025-06-10 16:26:32,870:INFO:Index name main: None
-2025-06-10 16:26:32,871:INFO:Index name main1: None
-2025-06-10 16:26:32,879:INFO:La tabla etl_assesment_data.sales1 ya existe.
-2025-06-10 16:26:32,900:INFO:Index name load: None
-2025-06-10 16:26:32,901:INFO:Added process_id=31 to DataFrame before load.
-2025-06-10 16:26:35,109:INFO:Loaded 10000 records into etl_assesment_data.sales1 (process_id=31)
-2025-06-10 16:26:35,109:INFO:Loaded 10000 records from data/sales_transactions_v1.csv into etl_assesment_data.sales1
-2025-06-10 16:26:35,109:INFO:ETL process completed successfully process_id=31. Total records loaded: 20000
+2025-06-11 16:54:04,383:INFO:Configuration loaded successfully from config/config.yaml
+2025-06-11 16:54:04,384:INFO:Starting ETL process...
+2025-06-11 16:54:04,501:INFO:ETL process started with process_id=48
+2025-06-11 16:54:04,670:INFO:Generated mock data saved to data/sales_transactions.csv with 10000 rows.
+2025-06-11 16:54:04,675:INFO:Connection to database OK and verified.
+2025-06-11 16:54:04,676:INFO:Truncating temporary table etl_assesment_data.sales_tmp
+2025-06-11 16:54:04,697:INFO:Processing file data/sales_transactions.csv into etl_assesment_data.sales_tmp
+2025-06-11 16:54:04,956:INFO:Detected encoding for data/sales_transactions.csv: ascii (confidence: 1.0)
+2025-06-11 16:54:04,956:INFO:Trying read data/sales_transactions.csv using encoding: ascii
+2025-06-11 16:54:04,989:INFO:Successfully read data/sales_transactions.csv using encoding: ascii
+2025-06-11 16:54:04,989:INFO:Index name extract: None
+2025-06-11 16:54:04,989:INFO:Data encrypted data/sales_transactions.csv
+2025-06-11 16:54:04,989:INFO:Index name load: None
+2025-06-11 16:54:04,996:INFO:Added process_id=48 to DataFrame before load.
+2025-06-11 16:54:06,900:INFO:Loaded 10000 records into etl_assesment_data.sales_tmp (process_id=48)
+2025-06-11 16:54:06,901:INFO:Loaded 10000 records from data/sales_transactions.csv into etl_assesment_data.sales_tmp
+2025-06-11 16:54:06,901:INFO:Performing incremental load from etl_assesment_data.sales_tmp to etl_assesment_data.sales
+2025-06-11 16:54:06,903:INFO:SQL ejecutada para incremental insert:
+INSERT INTO etl_assesment_data.sales (id, transaction_id, customer_id, product_id, quantity, timestamp, process_id)
+                SELECT id, transaction_id, customer_id, product_id, quantity, timestamp, process_id FROM etl_assesment_data.sales_tmp s
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM etl_assesment_data.sales t
+                    WHERE t.transaction_id = s.transaction_id AND t.customer_id = s.customer_id AND t.product_id = s.product_id AND t.quantity = s.quantity AND t.timestamp = s.timestamp
+                )
+2025-06-11 16:54:06,917:INFO:etl_assesment_data.sales_tmp contains 30000 rows before incremental insert.
+2025-06-11 16:54:07,017:INFO:Incremental insert completed from etl_assesment_data.sales_tmp to etl_assesment_data.sales. Rows inserted: 10000
+2025-06-11 16:54:07,021:INFO:etl_assesment_data.sales contains 30000 rows after incremental insert.
+2025-06-11 16:54:07,028:INFO:ETL process completed successfully process_id=48. Total records loaded: 10000
