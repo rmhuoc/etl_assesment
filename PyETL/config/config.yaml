@@ -14,23 +14,27 @@ load_process:
   sequence_name: etl_process_seq
   
 encryption:
+  enabled: true
   key_path: "config/secret.key"
   columns_to_encrypt:
     - customer_id
-    - product_id
-
 
 
 files_to_tables_tmp:
   - file_path: data/sales_transactions.csv
     schema: etl_assesment_data
-    table: sales_tmp
+    table: sales_tmp_1
 
 files_to_tables_inc:
   - tmp_schema: etl_assesment_data
     tmp_table: sales_tmp
     target_schema: etl_assesment_data
     target_table: sales
+    unique_keys: ["transaction_id", "customer_id", "product_id", "quantity", "timestamp"]
+  - tmp_schema: etl_assesment_data
+    tmp_table: sales_tmp_1
+    target_schema: etl_assesment_data
+    target_table: sales_1
     unique_keys: ["transaction_id", "customer_id", "product_id", "quantity", "timestamp"]
 
 

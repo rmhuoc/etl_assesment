@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 import logging
 import psycopg2
 from sqlalchemy import text  
+from sqlalchemy.exc import IntegrityError
 
 def get_engine(db_config):
     url = f"{db_config['dialect']}://{db_config['user']}:{db_config['password']}@" \
@@ -42,8 +43,7 @@ def clean_strings(df):
         # logging.error(f"ETL failed (process_id={process_id}): {e}")
         # raise
         
-from sqlalchemy.exc import IntegrityError
-import psycopg2
+
 
 def load_data(df, engine, table_name, schema=None, process_id=None):
     try:
@@ -91,13 +91,13 @@ def incremental_insert(engine, tmp_schema, tmp_table, target_schema, target_tabl
             f"t.{key} = s.{key}" for key in unique_keys
         ])
 
-        with engine.begin() as conn:  # begin() asegura commit automático y conexión activa
-            # Obtener columnas del tmp_table
+        with engine.begin() as conn:  
+            # Obtain columns tmp table
             result = conn.execute(text(f"SELECT * FROM {tmp_schema}.{tmp_table} LIMIT 0"))
             columns = result.keys()
             column_list = ", ".join(columns)
 
-            # Construir sentencia SQL
+            # Build SQL statement
             insert_sql = f"""
                 INSERT INTO {target_schema}.{target_table} ({column_list})
                 SELECT {column_list} FROM {tmp_schema}.{tmp_table} s
@@ -107,19 +107,19 @@ def incremental_insert(engine, tmp_schema, tmp_table, target_schema, target_tabl
                 )
             """
 
-            logging.info(f"SQL ejecutada para incremental insert:\n{insert_sql.strip()}")
+            #logging.info(f"SQL statement incremental insert:\n{insert_sql.strip()}")
 
-            # Contar antes
+            # Contar before
             count_tmp = conn.execute(text(f"SELECT COUNT(*) FROM {tmp_schema}.{tmp_table}")).scalar()
-            logging.info(f"{tmp_schema}.{tmp_table} contains {count_tmp} rows before incremental insert.")
+            #logging.info(f"{tmp_schema}.{tmp_table} contains {count_tmp} rows before incremental insert.")
 
-            # Ejecutar insert
+            # Execute insert
             insert_result = conn.execute(text(insert_sql))
             logging.info(f"Incremental insert completed from {tmp_schema}.{tmp_table} to {target_schema}.{target_table}. Rows inserted: {insert_result.rowcount}")
 
-            # Contar después
+            # Count after
             count_target = conn.execute(text(f"SELECT COUNT(*) FROM {target_schema}.{target_table}")).scalar()
-            logging.info(f"{target_schema}.{target_table} contains {count_target} rows after incremental insert.")
+            #logging.info(f"{target_schema}.{target_table} contains {count_target} rows after incremental insert.")
 
     except Exception as e:
         logging.error(f"Error during incremental insert from {tmp_schema}.{tmp_table} to {target_schema}.{target_table}: {e}")

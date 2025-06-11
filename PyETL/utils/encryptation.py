@@ -1,5 +1,6 @@
 #utils/encryptation.py
 from cryptography.fernet import Fernet
+import pandas as pd
 
 import logging
 

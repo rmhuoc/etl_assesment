@@ -1,10 +1,10 @@
-from utils.utils import generate_mock_data, setup_logging, load_config, ensure_table_exists, add_missing_columns
+from utils.utils import generate_mock_data, setup_logging, load_config, ensure_table_exists, add_missing_columns, ensure_table_exists_inc
 from utils.etl_monitor import start_etl_process, end_etl_process
 from load.load import get_engine, load_data, incremental_insert
 from extract.extract import extract_csv 
 from sqlalchemy import text  
 from datetime import datetime
-from transform.transform import encrypt_dataframe
+from transform.transform import encrypt_dataframe, encrypt_csv_to_new_file
 import logging
 
 
@@ -26,6 +26,13 @@ def main():
 
         # Generate mock data according config
         generate_mock_data(config)
+        
+        for file_entry in config.get('files_to_tables_tmp', []):
+            original_file = file_entry['file_path']
+            encrypted_file = original_file.replace('.csv', '_encrypted.csv')
+            encrypt_csv_to_new_file(original_file, encrypted_file, config['encryption'])
+            # Actualizamos el path para que luego usemos el CSV encriptado
+            file_entry['file_path'] = encrypted_file
 
         # Verificate connection db
         with engine.connect() as conn:
@@ -38,6 +45,10 @@ def main():
             schema = file_entry['schema']
             table = file_entry['table']
             full_table_name = f"{schema}.{table}"
+            
+            df = extract_csv(file_path)
+            #check if table exists, if not exists, is created
+            ensure_table_exists(df, engine, schema, table)
 
             # Truncar tabla temporal antes de la carga
             with engine.connect() as conn:
@@ -45,13 +56,11 @@ def main():
                 conn.execute(text(f"TRUNCATE TABLE {full_table_name}"))
 
             logging.info(f"Processing file {file_path} into {full_table_name}")
-            df = extract_csv(file_path)
-            df_encrypted = encrypt_dataframe(df, config['encryption'])
-            logging.info(f"Data encrypted {file_path}")
+            #check if extra columns in csv, if not in table, is added
+            add_missing_columns(df, engine, schema, table)
+            load_data(df, engine, table, schema=schema, process_id=process_id)
 
-            load_data(df_encrypted, engine, table, schema=schema, process_id=process_id)
-
-            loaded_count = len(df_encrypted)
+            loaded_count = len(df)
             total_loaded += loaded_count
 
             logging.info(f"Loaded {loaded_count} records from {file_path} into {full_table_name}")
@@ -63,6 +72,7 @@ def main():
             target_schema = inc_entry['target_schema']
             target_table = inc_entry['target_table']
             unique_keys = inc_entry['unique_keys']
+            ensure_table_exists_inc(engine, tmp_schema,tmp_table,target_schema, target_table)
 
             logging.info(f"Performing incremental load from {tmp_schema}.{tmp_table} to {target_schema}.{target_table}")
             incremental_insert(engine, tmp_schema, tmp_table, target_schema, target_table, unique_keys)
