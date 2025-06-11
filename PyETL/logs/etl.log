@@ -1,26 +1,24 @@
-2025-06-11 20:12:11,333:INFO:Configuration loaded successfully from config/config.yaml
-2025-06-11 20:12:11,333:INFO:Starting ETL process...
-2025-06-11 20:12:11,372:INFO:ETL process started with process_id=65
-2025-06-11 20:12:11,448:INFO:Generated mock data saved to data/sales_transactions.csv with 10000 rows.
-2025-06-11 20:12:11,548:INFO:Encryption key successfully loaded from 'config/secret.key'
-2025-06-11 20:12:11,713:INFO:Encrypted CSV written to 'data/sales_transactions_encrypted.csv'
-2025-06-11 20:12:11,718:INFO:Connection to database OK and verified.
-2025-06-11 20:12:12,117:INFO:Detected encoding for data/sales_transactions_encrypted.csv: ascii (confidence: 1.0)
-2025-06-11 20:12:12,117:INFO:Trying read data/sales_transactions_encrypted.csv using encoding: ascii
-2025-06-11 20:12:12,140:INFO:Successfully read data/sales_transactions_encrypted.csv using encoding: ascii
-2025-06-11 20:12:12,140:INFO:Index name extract: None
-2025-06-11 20:12:12,147:INFO:Table etl_assesment_data.sales_tmp_1 already exists.
-2025-06-11 20:12:12,147:INFO:Truncating temporary table etl_assesment_data.sales_tmp_1
-2025-06-11 20:12:12,171:INFO:Processing file data/sales_transactions_encrypted.csv into etl_assesment_data.sales_tmp_1
-2025-06-11 20:12:12,254:INFO:Index name load: None
-2025-06-11 20:12:12,256:INFO:Added process_id=65 to DataFrame before load.
-2025-06-11 20:12:13,567:INFO:Loaded 10000 records into etl_assesment_data.sales_tmp_1 (process_id=65)
-2025-06-11 20:12:13,568:INFO:Loaded 10000 records from data/sales_transactions_encrypted.csv into etl_assesment_data.sales_tmp_1
-2025-06-11 20:12:13,572:INFO:Target table etl_assesment_data.sales already exists.
-2025-06-11 20:12:13,572:INFO:Performing incremental load from etl_assesment_data.sales_tmp to etl_assesment_data.sales
-2025-06-11 20:12:13,883:INFO:Incremental insert completed from etl_assesment_data.sales_tmp to etl_assesment_data.sales. Rows inserted: 0
-2025-06-11 20:12:13,893:INFO:Target table etl_assesment_data.sales_1 doesn't exist. Creating it based on etl_assesment_data.sales_tmp_1.
-2025-06-11 20:12:13,919:INFO:Target table etl_assesment_data.sales_1 created based on schema of etl_assesment_data.sales_tmp_1.
-2025-06-11 20:12:13,919:INFO:Performing incremental load from etl_assesment_data.sales_tmp_1 to etl_assesment_data.sales_1
-2025-06-11 20:12:14,068:INFO:Incremental insert completed from etl_assesment_data.sales_tmp_1 to etl_assesment_data.sales_1. Rows inserted: 20000
-2025-06-11 20:12:14,078:INFO:ETL process completed successfully process_id=65. Total records loaded: 10000
+2025-06-12 01:36:41,865:INFO:Configuration loaded successfully from config/config.yaml
+2025-06-12 01:36:41,865:INFO:Starting ETL process...
+2025-06-12 01:36:41,901:INFO:ETL process started with process_id=80
+2025-06-12 01:36:41,987:INFO:Generated mock data saved to data/sales_transactions.csv with 10000 rows.
+2025-06-12 01:36:42,047:INFO:Encryption key successfully loaded from 'config/secret.key'
+2025-06-12 01:36:42,279:INFO:Encrypted CSV written to 'data/sales_transactions_encrypted.csv'
+2025-06-12 01:36:42,284:INFO:Connection to database OK and verified.
+2025-06-12 01:36:42,673:INFO:Detected encoding for data/sales_transactions_encrypted.csv: ascii (confidence: 1.0)
+2025-06-12 01:36:42,673:INFO:Trying read data/sales_transactions_encrypted.csv using encoding: ascii
+2025-06-12 01:36:42,693:INFO:Successfully read data/sales_transactions_encrypted.csv using encoding: ascii
+2025-06-12 01:36:42,693:INFO:Index name extract: None
+2025-06-12 01:36:42,700:INFO:Table etl_assesment_data.sales_tmp already exists.
+2025-06-12 01:36:42,700:INFO:Truncating temporary table etl_assesment_data.sales_tmp
+2025-06-12 01:36:42,711:INFO:Processing file data/sales_transactions_encrypted.csv into etl_assesment_data.sales_tmp
+2025-06-12 01:36:42,777:INFO:Column 'process_id' missing in DataFrame. Added with None values.
+2025-06-12 01:36:42,778:INFO:Index name load: None
+2025-06-12 01:36:42,779:INFO:Added process_id=80 to DataFrame before load.
+2025-06-12 01:36:43,988:INFO:Loaded 10000 records into etl_assesment_data.sales_tmp (process_id=80)
+2025-06-12 01:36:43,989:INFO:Loaded 10000 records from data/sales_transactions_encrypted.csv into etl_assesment_data.sales_tmp
+2025-06-12 01:36:43,992:INFO:Target table etl_assesment_data.sales already exists. Checking for missing columns...
+2025-06-12 01:36:44,028:INFO:Column 'tmp_test' added to etl_assesment_data.sales from etl_assesment_data.sales_tmp.
+2025-06-12 01:36:44,028:INFO:Performing incremental load from etl_assesment_data.sales_tmp to etl_assesment_data.sales
+2025-06-12 01:36:44,605:INFO:Incremental insert completed from etl_assesment_data.sales_tmp to etl_assesment_data.sales. Rows inserted: 30000
+2025-06-12 01:36:44,625:INFO:ETL process completed successfully process_id=80. Total records loaded: 10000

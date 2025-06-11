@@ -22,7 +22,7 @@ def encrypt_dataframe(df, encryption_config):
 
 
 
-def encrypt_csv_to_new_file(file_path, output_path, encryption_config):
+def data_encryptation(file_path, output_path, encryption_config):
     df = pd.read_csv(file_path)
 
     if not encryption_config.get("enabled", False):

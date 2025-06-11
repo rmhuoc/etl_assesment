@@ -1,10 +1,10 @@
-from utils.utils import generate_mock_data, setup_logging, load_config, ensure_table_exists, add_missing_columns, ensure_table_exists_inc
+from utils.utils import create_mock_data, setup_logging, load_config, check_table_tmp, sync_dataframe_with_table_schema,  check_table_inc
 from utils.etl_monitor import start_etl_process, end_etl_process
 from load.load import get_engine, load_data, incremental_insert
 from extract.extract import extract_csv 
 from sqlalchemy import text  
 from datetime import datetime
-from transform.transform import encrypt_dataframe, encrypt_csv_to_new_file
+from transform.transform import encrypt_dataframe, data_encryptation
 import logging
 
 
@@ -24,14 +24,15 @@ def main():
         process_id = start_etl_process(engine, config)
         logging.info(f"ETL process started with process_id={process_id}")
 
-        # Generate mock data according config
-        generate_mock_data(config)
+        # create mock data according config
+        create_mock_data(config)
         
+        # encryp this file, original file will be replaced
         for file_entry in config.get('files_to_tables_tmp', []):
             original_file = file_entry['file_path']
             encrypted_file = original_file.replace('.csv', '_encrypted.csv')
-            encrypt_csv_to_new_file(original_file, encrypted_file, config['encryption'])
-            # Actualizamos el path para que luego usemos el CSV encriptado
+            data_encryptation(original_file, encrypted_file, config['encryption'])
+            # update configuration path
             file_entry['file_path'] = encrypted_file
 
         # Verificate connection db
@@ -46,9 +47,10 @@ def main():
             table = file_entry['table']
             full_table_name = f"{schema}.{table}"
             
+            #transform csv into df
             df = extract_csv(file_path)
             #check if table exists, if not exists, is created
-            ensure_table_exists(df, engine, schema, table)
+            check_table_tmp(df, engine, schema, table)
 
             # Truncar tabla temporal antes de la carga
             with engine.connect() as conn:
@@ -57,7 +59,7 @@ def main():
 
             logging.info(f"Processing file {file_path} into {full_table_name}")
             #check if extra columns in csv, if not in table, is added
-            add_missing_columns(df, engine, schema, table)
+            sync_dataframe_with_table_schema(df, engine, schema, table)
             load_data(df, engine, table, schema=schema, process_id=process_id)
 
             loaded_count = len(df)
@@ -72,7 +74,7 @@ def main():
             target_schema = inc_entry['target_schema']
             target_table = inc_entry['target_table']
             unique_keys = inc_entry['unique_keys']
-            ensure_table_exists_inc(engine, tmp_schema,tmp_table,target_schema, target_table)
+            check_table_inc(engine, tmp_schema,tmp_table,target_schema, target_table)
 
             logging.info(f"Performing incremental load from {tmp_schema}.{tmp_table} to {target_schema}.{target_table}")
             incremental_insert(engine, tmp_schema, tmp_table, target_schema, target_table, unique_keys)

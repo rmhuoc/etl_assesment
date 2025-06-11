@@ -10,7 +10,7 @@ def start_etl_process(engine, config):
     sequence = load_proc['sequence_name']
     
     full_table = f"{schema}.{table_name}"
-    full_sequence = f"{schema}.{sequence}"  # 👈 Aquí se concatena schema + sequence
+    full_sequence = f"{schema}.{sequence}"  
 
     with engine.connect() as conn:
         result = conn.execute(text(f"SELECT nextval('{full_sequence}')"))

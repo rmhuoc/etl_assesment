@@ -7,6 +7,8 @@ import logging
 import psycopg2
 from sqlalchemy import text  
 from sqlalchemy.exc import IntegrityError
+import traceback
+from sqlalchemy.exc import SQLAlchemyError
 
 def get_engine(db_config):
     url = f"{db_config['dialect']}://{db_config['user']}:{db_config['password']}@" \
@@ -77,8 +79,14 @@ def load_data(df, engine, table_name, schema=None, process_id=None):
             logging.warning(f"Constraint violation (e.g., quantity >= 1) detected (process_id={process_id}): {detail}")
         else:
             logging.error(f"Database integrity error (process_id={process_id}): {str(e)}")
+    except SQLAlchemyError as e:
+        # Captura errores específicos de SQLAlchemy sin mostrar SQL completo
+        logging.error(f"SQLAlchemy error (process_id={process_id}): {e.__class__.__name__} - {str(e).splitlines()[0]}")
+        logging.debug(traceback.format_exc())  # Solo si necesitas el stack trace completo
+        raise
     except Exception as e:
-        logging.error(f"ETL failed (process_id={process_id}): {e}")
+        logging.error(f"Unexpected error (process_id={process_id}): {e.__class__.__name__}")
+        logging.debug(traceback.format_exc())  # Puedes quitar esto si no quieres ver nada
         raise
         
         
