@@ -9,6 +9,8 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 import traceback
 from sqlalchemy.exc import SQLAlchemyError
+from textwrap import dedent
+
 
 def get_engine(db_config):
     url = f"{db_config['dialect']}://{db_config['user']}:{db_config['password']}@" \
@@ -90,48 +92,51 @@ def load_data(df, engine, table_name, schema=None, process_id=None):
         raise
         
         
-from sqlalchemy import text
 
-def incremental_insert(engine, tmp_schema, tmp_table, target_schema, target_table, unique_keys):
+def incremental_insert(engine, tmp_schema, tmp_table, target_schema, target_table, unique_keys, process_id=None):
     try:
-        # Construye la condición de exclusión
         join_conditions = " AND ".join([
             f"t.{key} = s.{key}" for key in unique_keys
         ])
 
         with engine.begin() as conn:  
-            # Obtain columns tmp table
-            result = conn.execute(text(f"SELECT * FROM {tmp_schema}.{tmp_table} LIMIT 0"))
+            result = conn.execute(text(f'SELECT * FROM "{tmp_schema}"."{tmp_table}" LIMIT 0'))
             columns = result.keys()
-            column_list = ", ".join(columns)
+            column_list = ", ".join(f'"{col}"' for col in columns)
 
-            # Build SQL statement
-            insert_sql = f"""
-                INSERT INTO {target_schema}.{target_table} ({column_list})
-                SELECT {column_list} FROM {tmp_schema}.{tmp_table} s
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM {target_schema}.{target_table} t
+            # Filtro de process_id
+            process_filter = f"AND s.process_id = '{process_id}'" if process_id else ""
+            logging.info(f"Process filter used in incremental insert: {repr(process_filter)}")
+
+            # Construir SQL de inserción
+            insert_sql = dedent(f"""
+                INSERT INTO "{target_schema}"."{target_table}" ({column_list})
+                SELECT {column_list}
+                FROM "{tmp_schema}"."{tmp_table}" s
+                WHERE 1=1 {process_filter}
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM "{target_schema}"."{target_table}" t
                     WHERE {join_conditions}
                 )
-            """
+            """)
 
-            #logging.info(f"SQL statement incremental insert:\n{insert_sql.strip()}")
+            logging.info(f"SQL incremental insert:\n{insert_sql.strip()}")
 
-            # Contar before
-            count_tmp = conn.execute(text(f"SELECT COUNT(*) FROM {tmp_schema}.{tmp_table}")).scalar()
-            #logging.info(f"{tmp_schema}.{tmp_table} contains {count_tmp} rows before incremental insert.")
+            # Contar registros candidatos
+            count_sql = f'SELECT COUNT(*) FROM "{tmp_schema}"."{tmp_table}"'
+            if process_id:
+                count_sql += f" WHERE process_id = '{process_id}'"
+            count_tmp = conn.execute(text(count_sql)).scalar()
 
-            # Execute insert
+            logging.info(f"{tmp_schema}.{tmp_table} contiene {count_tmp} registros con process_id={process_id} antes de insert.")
+
+            # Ejecutar insert
             insert_result = conn.execute(text(insert_sql))
-            logging.info(f"Incremental insert completed from {tmp_schema}.{tmp_table} to {target_schema}.{target_table}. Rows inserted: {insert_result.rowcount}")
-
-            # Count after
-            count_target = conn.execute(text(f"SELECT COUNT(*) FROM {target_schema}.{target_table}")).scalar()
-            #logging.info(f"{target_schema}.{target_table} contains {count_target} rows after incremental insert.")
+            logging.info(f"Insert incremental completado. Filas insertadas: {insert_result.rowcount}")
 
     except Exception as e:
-        logging.error(f"Error during incremental insert from {tmp_schema}.{tmp_table} to {target_schema}.{target_table}: {e}")
+        logging.error(f"Error en insert incremental de {tmp_schema}.{tmp_table} a {target_schema}.{target_table}: {e}")
         raise
-
 
 

@@ -52,10 +52,6 @@ def main():
             #check if table exists, if not exists, is created
             check_table_tmp(df, engine, schema, table)
 
-            # Truncar tabla temporal antes de la carga
-            with engine.connect() as conn:
-                logging.info(f"Truncating temporary table {full_table_name}")
-                conn.execute(text(f"TRUNCATE TABLE {full_table_name}"))
 
             logging.info(f"Processing file {file_path} into {full_table_name}")
             #check if extra columns in csv, if not in table, is added
@@ -76,8 +72,8 @@ def main():
             unique_keys = inc_entry['unique_keys']
             check_table_inc(engine, tmp_schema,tmp_table,target_schema, target_table)
 
-            logging.info(f"Performing incremental load from {tmp_schema}.{tmp_table} to {target_schema}.{target_table}")
-            incremental_insert(engine, tmp_schema, tmp_table, target_schema, target_table, unique_keys)
+            logging.info(f"Performing incremental load from {tmp_schema}.{tmp_table} to {target_schema}.{target_table} in {process_id}")
+            incremental_insert(engine, tmp_schema, tmp_table, target_schema, target_table, unique_keys, process_id)
 
         logging.info(f"ETL process completed successfully process_id={process_id}. Total records loaded: {total_loaded}")
 

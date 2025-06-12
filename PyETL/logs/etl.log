@@ -1,24 +1,34 @@
-2025-06-12 01:36:41,865:INFO:Configuration loaded successfully from config/config.yaml
-2025-06-12 01:36:41,865:INFO:Starting ETL process...
-2025-06-12 01:36:41,901:INFO:ETL process started with process_id=80
-2025-06-12 01:36:41,987:INFO:Generated mock data saved to data/sales_transactions.csv with 10000 rows.
-2025-06-12 01:36:42,047:INFO:Encryption key successfully loaded from 'config/secret.key'
-2025-06-12 01:36:42,279:INFO:Encrypted CSV written to 'data/sales_transactions_encrypted.csv'
-2025-06-12 01:36:42,284:INFO:Connection to database OK and verified.
-2025-06-12 01:36:42,673:INFO:Detected encoding for data/sales_transactions_encrypted.csv: ascii (confidence: 1.0)
-2025-06-12 01:36:42,673:INFO:Trying read data/sales_transactions_encrypted.csv using encoding: ascii
-2025-06-12 01:36:42,693:INFO:Successfully read data/sales_transactions_encrypted.csv using encoding: ascii
-2025-06-12 01:36:42,693:INFO:Index name extract: None
-2025-06-12 01:36:42,700:INFO:Table etl_assesment_data.sales_tmp already exists.
-2025-06-12 01:36:42,700:INFO:Truncating temporary table etl_assesment_data.sales_tmp
-2025-06-12 01:36:42,711:INFO:Processing file data/sales_transactions_encrypted.csv into etl_assesment_data.sales_tmp
-2025-06-12 01:36:42,777:INFO:Column 'process_id' missing in DataFrame. Added with None values.
-2025-06-12 01:36:42,778:INFO:Index name load: None
-2025-06-12 01:36:42,779:INFO:Added process_id=80 to DataFrame before load.
-2025-06-12 01:36:43,988:INFO:Loaded 10000 records into etl_assesment_data.sales_tmp (process_id=80)
-2025-06-12 01:36:43,989:INFO:Loaded 10000 records from data/sales_transactions_encrypted.csv into etl_assesment_data.sales_tmp
-2025-06-12 01:36:43,992:INFO:Target table etl_assesment_data.sales already exists. Checking for missing columns...
-2025-06-12 01:36:44,028:INFO:Column 'tmp_test' added to etl_assesment_data.sales from etl_assesment_data.sales_tmp.
-2025-06-12 01:36:44,028:INFO:Performing incremental load from etl_assesment_data.sales_tmp to etl_assesment_data.sales
-2025-06-12 01:36:44,605:INFO:Incremental insert completed from etl_assesment_data.sales_tmp to etl_assesment_data.sales. Rows inserted: 30000
-2025-06-12 01:36:44,625:INFO:ETL process completed successfully process_id=80. Total records loaded: 10000
+2025-06-12 02:06:18,341:INFO:Configuration loaded successfully from config/config.yaml
+2025-06-12 02:06:18,341:INFO:Starting ETL process...
+2025-06-12 02:06:18,394:INFO:ETL process started with process_id=91
+2025-06-12 02:06:18,469:INFO:Generated mock data saved to data/sales_transactions.csv with 10000 rows.
+2025-06-12 02:06:18,536:INFO:Encryption key successfully loaded from 'config/secret.key'
+2025-06-12 02:06:18,711:INFO:Encrypted CSV written to 'data/sales_transactions_encrypted.csv'
+2025-06-12 02:06:18,716:INFO:Connection to database OK and verified.
+2025-06-12 02:06:19,077:INFO:Detected encoding for data/sales_transactions_encrypted.csv: ascii (confidence: 1.0)
+2025-06-12 02:06:19,077:INFO:Trying read data/sales_transactions_encrypted.csv using encoding: ascii
+2025-06-12 02:06:19,096:INFO:Successfully read data/sales_transactions_encrypted.csv using encoding: ascii
+2025-06-12 02:06:19,096:INFO:Index name extract: None
+2025-06-12 02:06:19,103:INFO:Table etl_assesment_data.sales_tmp already exists.
+2025-06-12 02:06:19,103:INFO:Processing file data/sales_transactions_encrypted.csv into etl_assesment_data.sales_tmp
+2025-06-12 02:06:19,150:INFO:Column 'process_id' missing in DataFrame. Added with None values.
+2025-06-12 02:06:19,150:INFO:Index name load: None
+2025-06-12 02:06:19,151:INFO:Added process_id=91 to DataFrame before load.
+2025-06-12 02:06:20,407:INFO:Loaded 10000 records into etl_assesment_data.sales_tmp (process_id=91)
+2025-06-12 02:06:20,408:INFO:Loaded 10000 records from data/sales_transactions_encrypted.csv into etl_assesment_data.sales_tmp
+2025-06-12 02:06:20,412:INFO:Target table etl_assesment_data.sales already exists. Checking for missing columns...
+2025-06-12 02:06:20,452:INFO:Performing incremental load from etl_assesment_data.sales_tmp to etl_assesment_data.sales in 91
+2025-06-12 02:06:20,454:INFO:Process filter used in incremental insert: "AND s.process_id = '91'"
+2025-06-12 02:06:20,454:INFO:SQL incremental insert:
+INSERT INTO "etl_assesment_data"."sales" ("id", "transaction_id", "customer_id", "product_id", "quantity", "timestamp", "process_id")
+SELECT "id", "transaction_id", "customer_id", "product_id", "quantity", "timestamp", "process_id"
+FROM "etl_assesment_data"."sales_tmp" s
+WHERE 1=1 AND s.process_id = '91'
+AND NOT EXISTS (
+    SELECT 1
+    FROM "etl_assesment_data"."sales" t
+    WHERE t.transaction_id = s.transaction_id AND t.customer_id = s.customer_id AND t.product_id = s.product_id AND t.quantity = s.quantity AND t.timestamp = s.timestamp
+)
+2025-06-12 02:06:20,471:INFO:etl_assesment_data.sales_tmp contiene 10000 registros con process_id=91 antes de insert.
+2025-06-12 02:06:20,570:INFO:Insert incremental completado. Filas insertadas: 10000
+2025-06-12 02:06:20,584:INFO:ETL process completed successfully process_id=91. Total records loaded: 10000
