@@ -17,6 +17,27 @@ import traceback
 import re
 
 def create_mock_data(config):
+    """
+    Generate mock data based on the provided configuration.
+
+    This function reads mock data settings from the configuration and creates CSV files
+    with fake but structurally consistent data for testing or development.
+
+    Supported column types:
+    - int_sequence: Generates a sequential integer column starting at 1.
+    - random_int_<start>_<end>: Random integer in the given range.
+    - datetime_now_minus_random_minutes_0_100000: Random datetime within the last ~70 days.
+    - random_unique_int_start_end: Ensures unique integers across rows within the range.
+
+    Parameters:
+    config (dict): Configuration dictionary containing:
+        - file_path: Path to save the generated CSV.
+        - num_rows: Number of rows to generate.
+        - columns: Dictionary defining column names and their generation rules.
+
+    Returns:
+    None
+    """
     for dataset in config.get("mock_data", []):
         path = dataset["file_path"]
         num_rows = dataset.get("num_rows", 1000)
@@ -58,10 +79,19 @@ def create_mock_data(config):
         logging.info(f"Generated mock data saved to {path} with {num_rows} rows.")
 
 
-def setup_logging():
+def setup_logging(config):
+    """
+    Configure the global logging settings for the ETL process.
+    """
+    log_dir = config.get('logging', {}).get('log_dir', 'logs')
+    log_file = config.get('logging', {}).get('log_file', 'etl.log')
+    when = config.get('logging', {}).get('when', 'midnight')
+    interval = config.get('logging', {}).get('interval', 1)
+    backup_count = config.get('logging', {}).get('backup_count', 7)
+    encoding = config.get('logging', {}).get('encoding', 'utf-8')
 
-    if not os.path.exists('logs'):
-        os.makedirs('logs')
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
 
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
@@ -70,19 +100,37 @@ def setup_logging():
         logger.handlers.clear()
 
     handler = TimedRotatingFileHandler(
-        filename='logs/etl.log',
-        when='midnight',      # rotate at midnight
-        interval=1,
-        backupCount=7,        # onlye seven last days of log
-        encoding='utf-8'
+        filename=os.path.join(log_dir, log_file),
+        when=when,
+        interval=interval,
+        backupCount=backup_count,
+        encoding=encoding
     )
     formatter = logging.Formatter('%(asctime)s:%(levelname)s:%(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
+
     
 
 
 def load_config(path='config/config.yaml'):
+    """
+    Load the YAML configuration file from the given path.
+
+    This function reads and parses a YAML file and returns it as a dictionary.
+    It performs error handling for file access and parsing issues.
+
+    Parameters:
+    path (str): Path to the configuration file. Default is 'config/config.yaml'.
+
+    Returns:
+    dict: Parsed configuration dictionary.
+
+    Raises:
+    FileNotFoundError: If the configuration file does not exist.
+    yaml.YAMLError: If there is a YAML syntax error.
+    Exception: For any other unexpected errors.
+    """
     try:
         if not os.path.exists(path):
             logging.error(f"Config file not found: {path}")
@@ -105,7 +153,23 @@ def load_config(path='config/config.yaml'):
 
 def check_table_tmp(df, engine, schema, table_name):
     """
-    
+    Check if a temporary table exists in the database and create it if it doesn't.
+
+    This utility is used to ensure a working table exists before loading data.
+    It uses the schema of the provided DataFrame to infer the structure of the new table.
+
+    - If the table already exists, nothing happens.
+    - If it does not exist, the table is created with the appropriate columns.
+    - If 'process_id' column is missing, it is added with integer dtype.
+
+    Parameters:
+    df (pd.DataFrame): DataFrame used to infer table schema.
+    engine (sqlalchemy.Engine): SQLAlchemy engine for database connection.
+    schema (str): Target schema in the database.
+    table_name (str): Name of the table to check or create.
+
+    Returns:
+    None
     """
     inspector = inspect(engine)
     if not inspector.has_table(table_name, schema=schema):
@@ -126,12 +190,24 @@ def check_table_tmp(df, engine, schema, table_name):
         logging.info(f"Table {schema}.{table_name} already exists.")
         
 
-from sqlalchemy import inspect, MetaData, Table
-import pandas as pd
-import logging
 
 def check_table_inc(engine, tmp_schema, tmp_table, target_schema, target_table):
-    """.
+    """
+    Ensure the target table exists and is aligned with the structure of the temporary table.
+
+    This function is used during incremental loads to:
+    - Create the target table if it does not exist, using the structure of the temporary table.
+    - Add any missing columns that exist in the temporary table but not in the target table.
+
+    Parameters:
+    engine (sqlalchemy.Engine): SQLAlchemy engine connected to the database.
+    tmp_schema (str): Schema of the temporary table.
+    tmp_table (str): Name of the temporary table.
+    target_schema (str): Schema of the target table.
+    target_table (str): Name of the target table.
+
+    Returns:
+    None
     """
     inspector = inspect(engine)
 
@@ -168,7 +244,7 @@ def check_table_inc(engine, tmp_schema, tmp_table, target_schema, target_table):
     else:
         logging.info(f"Target table {target_schema}.{target_table} already exists. Checking for missing columns...")
 
-        # Cargar columnas de ambas tablas
+        # Load columns from table
         tmp_metadata = MetaData(schema=tmp_schema)
         tmp_tbl = Table(tmp_table, tmp_metadata, autoload_with=engine)
         tmp_columns = {col.name for col in tmp_tbl.columns}
@@ -187,43 +263,27 @@ def check_table_inc(engine, tmp_schema, tmp_table, target_schema, target_table):
                 logging.info(f"Column '{col}' added to {target_schema}.{target_table} from {tmp_schema}.{tmp_table}.")
             except Exception as e:
                 logging.error(f"Could not add column '{col}' to {target_schema}.{target_table}: {e}")
-
-
-
-
-# def add_missing_columns(df, engine, schema, table_name):
-    # """
-    
-    # """
-    # metadata = MetaData(schema=schema)
-    # table = Table(table_name, metadata, autoload_with=engine)
-    # db_columns = {col.name for col in table.columns}
-    # df_columns = set(df.columns)
-    
-    # if 'process_id' not in db_columns:
-       # logging.info(f"Adding mising column 'process_id' in {schema}.{table_name}")
-       # try:
-           # with engine.begin() as conn:
-               # conn.execute(f'ALTER TABLE "{schema}"."{table_name}" ADD COLUMN "process_id" INTEGER')
-           # logging.info(f"Column 'process_id' added sucessfully in {schema}.{table_name}.")
-       # except SQLAlchemyError as e:
-           # logging.error(f"Unable to add column 'process_id': {e}")
-
-    # missing_columns = df_columns - db_columns
-    # if not missing_columns:
-        # return
-
-    # logging.info(f"Missing columns in  {schema}.{table_name}: {missing_columns}")
-    # for col in missing_columns:
-        # try:
-            # alter_sql = f'ALTER TABLE "{schema}"."{table_name}" ADD COLUMN "{col}" TEXT'
-            # with engine.begin() as conn:
-                # conn.execute(alter_sql)
-            # logging.info(f"Column '{col}' added in {schema}.{table_name}.")
-        # except SQLAlchemyError as e:
-            # logging.error(f"Unable to add column '{col}': {e}")
             
 def infer_pg_type(series):
+    """
+    Infer the corresponding PostgreSQL data type from a pandas Series dtype.
+
+    This function examines the data type of the given pandas Series and returns
+    an appropriate PostgreSQL column type as a string. It covers common numeric,
+    boolean, datetime, and fallback to text types.
+
+    Parameters:
+    series (pd.Series): A pandas Series whose dtype will be analyzed.
+
+    Returns:
+    str: A string representing the PostgreSQL data type inferred from the Series dtype.
+         Possible return values include:
+         - "BIGINT" for integer types,
+         - "DOUBLE PRECISION" for float types,
+         - "BOOLEAN" for boolean types,
+         - "TIMESTAMP" for datetime types,
+         - "TEXT" as a fallback for any other types.
+    """
     if pd.api.types.is_integer_dtype(series):
         return "BIGINT"
     elif pd.api.types.is_float_dtype(series):
@@ -236,37 +296,130 @@ def infer_pg_type(series):
         return "TEXT"
 
 def sanitize_identifier(name):
+    """
+    Sanitize a string to be a valid SQL identifier by removing invalid characters.
+
+    This function removes any character from the input string that is not
+    an uppercase or lowercase letter, a digit, or an underscore. This ensures
+    the resulting string can safely be used as a SQL identifier (e.g., table or column name).
+
+    Parameters:
+    name (str): The input string to sanitize.
+
+    Returns:
+    str: A sanitized string containing only letters, digits, and underscores.
+    """
     return re.sub(r'[^a-zA-Z0-9_]', '', name)
 
 def sync_dataframe_with_table_schema(df, engine, schema, table_name):
+    """
+    Synchronizes the columns of a pandas DataFrame with the schema of a PostgreSQL table.
+
+    This function ensures that the DataFrame contains all columns present in the database table,
+    adding missing columns to the DataFrame with None values. It also adds columns that exist in
+    the DataFrame but are missing from the database table by issuing ALTER TABLE statements.
+
+    Columns managed by the database, such as an auto-incrementing 'id' field, are ignored during synchronization.
+
+    Parameters:
+        df (pd.DataFrame): The DataFrame to synchronize.
+        engine (sqlalchemy.Engine): SQLAlchemy engine connected to the PostgreSQL database.
+        schema (str): Name of the schema in the database.
+        table_name (str): Name of the table in the database.
+
+    Returns:
+        pd.DataFrame: The updated DataFrame, with columns added to match the database schema.
+    """
     metadata = MetaData(schema=schema)
+    # Reflect the target table metadata from the database
     table = Table(table_name, metadata, autoload_with=engine)
-    db_columns = {col.name for col in table.columns}
-    df_columns = set(df.columns)
+    db_columns = {col.name for col in table.columns}  # Columns existing in the DB table
+    df_columns = set(df.columns)                      # Columns present in the DataFrame
     
-    # Excluir columnas gestionadas por la BD (como ID autoincremental)
+    # Exclude DB-managed columns, e.g. auto-increment id
     ignored_columns = {'id'}
     db_columns -= ignored_columns
 
-
-    # Añadir columnas faltantes al DataFrame
+    # Add missing columns to the DataFrame with None values
     missing_in_df = db_columns - df_columns
     for col in missing_in_df:
+        if col == "process_id":
+            logging.info(f"Column '{col}' is missing in DataFrame. Skipping adding it with None values here.")
+            continue
         df[col] = None
-        logging.info(f"Column '{col}' missing in DataFrame. Added with None values.")
+        logging.info(f"Column '{col}' was missing in DataFrame and was added with None values.")
 
-    # Añadir columnas faltantes a la base de datos
+    # Add missing columns to the database table based on DataFrame columns
     missing_in_db = df_columns - db_columns
     for col in missing_in_db:
         try:
-            col_type = infer_pg_type(df[col])
-            safe_col = sanitize_identifier(col)
+            col_type = infer_pg_type(df[col])  # Infer PostgreSQL type from DataFrame column
+            safe_col = sanitize_identifier(col)  # Sanitize column name for SQL
             alter_sql = f'ALTER TABLE "{schema}"."{table_name}" ADD COLUMN "{safe_col}" {col_type}'
             with engine.begin() as conn:
-                conn.execute(text(alter_sql))
+                conn.execute(text(alter_sql))  # Execute ALTER TABLE to add new column
             logging.info(f"Column '{col}' added to {schema}.{table_name} with type {col_type}.")
         except Exception as e:
             logging.error(f"Error adding column '{col}' to {schema}.{table_name}: {e}")
             logging.error(traceback.format_exc())
 
     return df
+
+
+
+
+def align_types_df_to_db_schema(df, engine, schema, table_name):
+    """
+    Align the data types of a pandas DataFrame's columns to match the PostgreSQL table schema.
+
+    This function inspects the PostgreSQL table's column types and attempts to cast
+    the corresponding DataFrame columns to compatible pandas data types. Columns in the DataFrame
+    that do not exist in the database schema are skipped with a warning.
+
+    Parameters:
+        df (pd.DataFrame): The DataFrame whose columns will be type-aligned.
+        engine (sqlalchemy.Engine): SQLAlchemy engine connected to the PostgreSQL database.
+        schema (str): The schema name of the PostgreSQL database.
+        table_name (str): The table name in the PostgreSQL database.
+
+    Returns:
+        pd.DataFrame: The DataFrame with columns cast to types aligned with the database schema.
+    """
+    metadata = MetaData(schema=schema)
+    # Reflect the table metadata from the database
+    table = Table(table_name, metadata, autoload_with=engine)
+
+    # Get the set of column names from the DB table
+    db_column_names = {col.name for col in table.columns}
+
+    # Iterate over DataFrame columns to align types
+    for col in df.columns:
+        if col not in db_column_names:
+            logging.warning(f"Column '{col}' not found in DB metadata. Skipping type alignment.")
+            continue
+
+        # Get the DB column type as string for matching
+        db_type = table.columns[col].type
+        try:
+            db_type_str = str(db_type).upper()
+            if 'INT' in db_type_str:
+                # Cast to pandas nullable integer type
+                df[col] = pd.to_numeric(df[col], errors='coerce').astype('Int64')
+            elif 'FLOAT' in db_type_str or 'DOUBLE' in db_type_str or 'NUMERIC' in db_type_str:
+                # Cast to float
+                df[col] = pd.to_numeric(df[col], errors='coerce').astype(float)
+            elif 'DATE' in db_type_str or 'TIME' in db_type_str:
+                # Cast to datetime
+                df[col] = pd.to_datetime(df[col], errors='coerce')
+            elif 'BOOL' in db_type_str:
+                # Cast to boolean
+                df[col] = df[col].astype(bool)
+            else:
+                # Default to string type
+                df[col] = df[col].astype(str)
+        except Exception as e:
+            logging.warning(f"Could not cast column '{col}' to type {db_type}: {e}")
+
+    return df
+
+

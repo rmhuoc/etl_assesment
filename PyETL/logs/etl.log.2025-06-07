@@ -1,3 +1,0 @@
-2025-06-07 09:53:08,644:INFO:Configuration loaded successfully from config/config.yaml
-2025-06-07 20:51:26,635:INFO:Configuration loaded successfully from config/config.yaml
-2025-06-07 20:51:26,938:ERROR:ETL failed: name 'get_engine' is not defined
