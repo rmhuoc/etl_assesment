@@ -42,9 +42,9 @@ def clean_strings(df):
         df[col] = df[col].apply(lambda x: x.encode('utf-8', 'replace').decode('utf-8', 'replace') if isinstance(x, str) else x)
     return df
     
-def load_data(df, engine, table_name, schema=None, process_id=None):
+def load_with_copy(df, engine, table_name, schema=None, process_id=None):
     """
-    Load a pandas DataFrame into a SQL database table using SQLAlchemy.
+    Load a pandas DataFrame into a PostgreSQL table using the COPY command for performance.
 
     Parameters:
         df (pandas.DataFrame): DataFrame to be inserted into the database.
@@ -57,50 +57,67 @@ def load_data(df, engine, table_name, schema=None, process_id=None):
         - Resets DataFrame index.
         - Drops 'index' column if present.
         - Adds 'process_id' column if provided.
-        - Loads data into the target table appending rows.
-        - Handles and logs common integrity errors (duplicates, constraint violations).
-        - Logs and raises unexpected errors.
+        - Loads data into the target table using PostgreSQL COPY FROM for performance.
+        - Handles and logs common integrity errors.
     """
+    import io
+    import psycopg2
+    from sqlalchemy import text
+
     try:
         logging.info(f"Index name load: {df.index.name}")
-        df.reset_index(drop=True,inplace=True)
+        df.reset_index(drop=True, inplace=True)
         df = df.copy()
+
         if 'index' in df.columns:
             df.drop(columns=['index'], inplace=True)
-            
+
         if process_id is not None:
             df['process_id'] = int(process_id)
             logging.info(f"Added process_id={process_id} to DataFrame before load.")
-       
-        df.to_sql(
-            name=table_name,
-            con=engine,
-            schema=schema,
-            if_exists='append',
-            index=False,
-            method='multi'
-        )
 
-        logging.info(f"Loaded {len(df)} records into {schema}.{table_name} (process_id={process_id})")
-    except IntegrityError as e:
-        orig = getattr(e.orig, 'diag', None)
-        if isinstance(e.orig, psycopg2.errors.UniqueViolation):
+        # Convert DataFrame to CSV format in-memory
+        buffer = io.StringIO()
+        df.to_csv(buffer, index=False, header=False)
+        buffer.seek(0)
+
+        # Build target table full name
+        table_fullname = f'{schema}.{table_name}' if schema else table_name
+
+        # Use raw connection for COPY
+        raw_conn = engine.raw_connection()
+        cursor = raw_conn.cursor()
+
+        columns = ', '.join(df.columns)
+        copy_sql = f"COPY {table_fullname} ({columns}) FROM STDIN WITH CSV"
+
+        cursor.copy_expert(sql=copy_sql, file=buffer)
+        raw_conn.commit()
+        cursor.close()
+
+        logging.info(f"Loaded {len(df)} records into {table_fullname} using COPY (process_id={process_id})")
+
+    except psycopg2.IntegrityError as e:
+        raw_conn.rollback()
+        orig = getattr(e, 'diag', None)
+        if isinstance(e, psycopg2.errors.UniqueViolation):
             detail = orig.message_detail if orig and orig.message_detail else str(e)
             logging.warning(f"Duplicate records detected (process_id={process_id}): {detail}")
-        elif isinstance(e.orig, psycopg2.errors.CheckViolation):
+        elif isinstance(e, psycopg2.errors.CheckViolation):
             detail = orig.message_detail if orig and orig.message_detail else str(e)
             logging.warning(f"Constraint violation (e.g., quantity >= 1) detected (process_id={process_id}): {detail}")
         else:
             logging.error(f"Database integrity error (process_id={process_id}): {str(e)}")
-    except SQLAlchemyError as e:
-        # Capture specific SQLAlchemy errors without showing full SQL query
-        logging.error(f"SQLAlchemy error (process_id={process_id}): {e.__class__.__name__} - {str(e).splitlines()[0]}")
-        logging.debug(traceback.format_exc())  # Debug level full traceback
-        raise
     except Exception as e:
-        logging.error(f"Unexpected error (process_id={process_id}): {e.__class__.__name__}")
-        logging.debug(traceback.format_exc())  # Debug level full traceback
+        logging.error(f"Unexpected error (process_id={process_id}): {e.__class__.__name__} - {str(e)}")
+        logging.debug(traceback.format_exc())
         raise
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'raw_conn' in locals():
+            raw_conn.close()
+
         
 def incremental_insert(engine, tmp_schema, tmp_table, target_schema, target_table, unique_keys, process_id):
     """
@@ -246,7 +263,7 @@ def validate_and_load_csv_file_in_chunks(file_path, engine, schema, table, proce
         chunk["process_id"] = pd.Series([process_id] * len(chunk), dtype="Int64")
 
         # 6. Load chunk into the database
-        load_data(chunk, engine, table, schema=schema, process_id=process_id)
+        load_with_copy(chunk, engine, table, schema=schema, process_id=process_id)
 
         total_loaded += len(chunk)
         logging.info(f"Loaded {len(chunk)} records into {schema}.{table} (total so far: {total_loaded})")

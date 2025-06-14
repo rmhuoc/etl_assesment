@@ -1,29 +1,29 @@
-2025-06-14 18:02:58,702:INFO:Starting ETL process...
-2025-06-14 18:02:58,750:INFO:ETL process started with process_id=164
-2025-06-14 18:02:58,853:INFO:Generated mock data saved to data/sales_transactions.csv with 10000 rows.
-2025-06-14 18:02:58,889:INFO:Encryption key successfully loaded from 'config/secret.key'
-2025-06-14 18:02:59,080:INFO:Encrypted CSV written to 'data/sales_transactions_encrypted.csv'
-2025-06-14 18:02:59,086:INFO:Connection to database OK and verified.
-2025-06-14 18:02:59,086:INFO:Processing file data/sales_transactions_encrypted.csv into etl_assesment_data.sales_tmp using chunks of size 5000
-2025-06-14 18:02:59,086:INFO:Reading file data/sales_transactions_encrypted.csv in chunks of 5000
-2025-06-14 18:02:59,115:INFO:Processing chunk of 5000 rows for table etl_assesment_data.sales_tmp
-2025-06-14 18:02:59,123:INFO:Table etl_assesment_data.sales_tmp already exists.
-2025-06-14 18:02:59,172:INFO:Column 'process_id' is missing in DataFrame. Skipping adding it with None values here.
-2025-06-14 18:02:59,208:WARNING:Removed 7 rows with timestamps beyond 2025-06-14 16:02:59.204201+00:00
-2025-06-14 18:02:59,213:INFO:Index name load: None
-2025-06-14 18:02:59,214:INFO:Added process_id=164 to DataFrame before load.
-2025-06-14 18:02:59,754:INFO:Loaded 4993 records into etl_assesment_data.sales_tmp (process_id=164)
-2025-06-14 18:02:59,755:INFO:Loaded 4993 records into etl_assesment_data.sales_tmp (total so far: 4993)
-2025-06-14 18:02:59,768:INFO:Processing chunk of 5000 rows for table etl_assesment_data.sales_tmp
-2025-06-14 18:02:59,774:INFO:Table etl_assesment_data.sales_tmp already exists.
-2025-06-14 18:02:59,795:INFO:Column 'process_id' is missing in DataFrame. Skipping adding it with None values here.
-2025-06-14 18:02:59,824:WARNING:Removed 9 rows with timestamps beyond 2025-06-14 16:02:59.823185+00:00
-2025-06-14 18:02:59,827:INFO:Index name load: None
-2025-06-14 18:02:59,828:INFO:Added process_id=164 to DataFrame before load.
-2025-06-14 18:03:00,502:INFO:Loaded 4991 records into etl_assesment_data.sales_tmp (process_id=164)
-2025-06-14 18:03:00,503:INFO:Loaded 4991 records into etl_assesment_data.sales_tmp (total so far: 9984)
-2025-06-14 18:03:00,503:INFO:Finished loading file data/sales_transactions_encrypted.csv. Total rows loaded: 9984 (process_id=164)
-2025-06-14 18:03:00,508:INFO:Target table etl_assesment_data.sales already exists. Checking for missing columns...
-2025-06-14 18:03:00,544:INFO:Performing incremental load from etl_assesment_data.sales_tmp to etl_assesment_data.sales for process_id 164
-2025-06-14 18:03:00,814:INFO:Inserted 9984 new records into etl_assesment_data.sales
-2025-06-14 18:03:00,869:INFO:ETL process completed successfully process_id=164. Total records loaded: 9984
+2025-06-14 18:12:00,335:INFO:Starting ETL process...
+2025-06-14 18:12:00,384:INFO:ETL process started with process_id=165
+2025-06-14 18:12:00,462:INFO:Generated mock data saved to data/sales_transactions.csv with 10000 rows.
+2025-06-14 18:12:00,522:INFO:Encryption key successfully loaded from 'config/secret.key'
+2025-06-14 18:12:00,923:INFO:Encrypted CSV written to 'data/sales_transactions_encrypted.csv'
+2025-06-14 18:12:00,929:INFO:Connection to database OK and verified.
+2025-06-14 18:12:00,929:INFO:Processing file data/sales_transactions_encrypted.csv into etl_assesment_data.sales_tmp using chunks of size 5000
+2025-06-14 18:12:00,929:INFO:Reading file data/sales_transactions_encrypted.csv in chunks of 5000
+2025-06-14 18:12:00,953:INFO:Processing chunk of 5000 rows for table etl_assesment_data.sales_tmp
+2025-06-14 18:12:00,962:INFO:Table etl_assesment_data.sales_tmp already exists.
+2025-06-14 18:12:01,015:INFO:Column 'process_id' is missing in DataFrame. Skipping adding it with None values here.
+2025-06-14 18:12:01,047:WARNING:Removed 5 rows with timestamps beyond 2025-06-14 16:12:01.046175+00:00
+2025-06-14 18:12:01,053:INFO:Index name load: None
+2025-06-14 18:12:01,053:INFO:Added process_id=165 to DataFrame before load.
+2025-06-14 18:12:01,144:INFO:Loaded 4995 records into etl_assesment_data.sales_tmp using COPY (process_id=165)
+2025-06-14 18:12:01,144:INFO:Loaded 4995 records into etl_assesment_data.sales_tmp (total so far: 4995)
+2025-06-14 18:12:01,157:INFO:Processing chunk of 5000 rows for table etl_assesment_data.sales_tmp
+2025-06-14 18:12:01,163:INFO:Table etl_assesment_data.sales_tmp already exists.
+2025-06-14 18:12:01,178:INFO:Column 'process_id' is missing in DataFrame. Skipping adding it with None values here.
+2025-06-14 18:12:01,204:WARNING:Removed 4 rows with timestamps beyond 2025-06-14 16:12:01.203336+00:00
+2025-06-14 18:12:01,207:INFO:Index name load: None
+2025-06-14 18:12:01,207:INFO:Added process_id=165 to DataFrame before load.
+2025-06-14 18:12:01,327:INFO:Loaded 4996 records into etl_assesment_data.sales_tmp using COPY (process_id=165)
+2025-06-14 18:12:01,327:INFO:Loaded 4996 records into etl_assesment_data.sales_tmp (total so far: 9991)
+2025-06-14 18:12:01,328:INFO:Finished loading file data/sales_transactions_encrypted.csv. Total rows loaded: 9991 (process_id=165)
+2025-06-14 18:12:01,332:INFO:Target table etl_assesment_data.sales already exists. Checking for missing columns...
+2025-06-14 18:12:01,370:INFO:Performing incremental load from etl_assesment_data.sales_tmp to etl_assesment_data.sales for process_id 165
+2025-06-14 18:12:01,607:INFO:Inserted 9991 new records into etl_assesment_data.sales
+2025-06-14 18:12:01,662:INFO:ETL process completed successfully process_id=165. Total records loaded: 9991
