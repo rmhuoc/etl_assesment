@@ -13,21 +13,33 @@ load_process:
   table_name: etl_load_log
   sequence_name: etl_process_seq
   
+  
 encryption:
+  enabled: true
   key_path: "config/secret.key"
   columns_to_encrypt:
     - customer_id
-    - product_id
 
+paths:
+  archive_dir: data/archive
 
-
-files_to_tables:
+files_to_tables_tmp:
   - file_path: data/sales_transactions.csv
     schema: etl_assesment_data
-    table: sales
+    table: sales_tmp
+
+
+files_to_tables_inc:
+  - tmp_schema: etl_assesment_data
+    tmp_table: sales_tmp
+    target_schema: etl_assesment_data
+    target_table: sales
+    unique_keys: ["transaction_id", "customer_id", "product_id", "quantity", "timestamp"]
+    
+
 
 mock_data:
-  - file_path: data/sales_transactions.csv
+  - file_path: data/sales_transactions_{process_id}.csv
     num_rows: 10000
     columns:
       transaction_id: random_unique_int_1_9999999
@@ -35,14 +47,36 @@ mock_data:
       product_id: random_int_200_250
       quantity: random_int_1_10
       timestamp: datetime_now_minus_random_minutes_0_100000
+      
+      
+csv:
+  chunk_size: 2000
+  max_workers: 4
+  
+  
+tables:
+  sales_tmp:
+    required_columns:
+      - product_id
+      - customer_id
+      - quantity
+      
+    filters:
+      quantity:
+        min: 1
+        max: 10
+      timestamp:
+        max: "now"  # or explicit tinmestamp "2025-06-14T23:59:59"
+        
+        
+logging:
+  log_dir: logs
+  log_file: etl.log
+  when: midnight
+  interval: 1
+  backup_count: 7
+  encoding: utf-8
 
 
-  - file_path: data/sales_transactions_v1.csv
-    num_rows: 10000
-    columns:
-      transaction_id: int_sequence
-      customer_id: random_int_1000_1100
-      product_id: random_int_200_250
-      quantity: random_int_1_10
-      timestamp: datetime_now_minus_random_minutes_0_100000
+
 
