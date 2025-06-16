@@ -59,6 +59,7 @@ def data_encryptation(file_path, output_path, encryption_config):
         - Saves encrypted DataFrame to output CSV without index.
         - Logs a message upon successful writing.
     """
+    logging.info(f"file path'{file_path}'")
     df = pd.read_csv(file_path)
 
     if not encryption_config.get("enabled", False):

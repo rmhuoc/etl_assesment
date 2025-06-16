@@ -1,0 +1,11 @@
+# Keys and secrets
+config/secret.key
+# Logs
+logs/
+*.log
+# input Data
+data/
+# Python cache
+__pycache__/
+*.pyc
+*.ppt

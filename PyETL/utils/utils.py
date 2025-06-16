@@ -15,8 +15,9 @@ import logging
 from sqlalchemy.exc import SQLAlchemyError
 import traceback
 import re
+import shutil
 
-def create_mock_data(config):
+def create_mock_data(config, process_id=None):
     """
     Generate mock data based on the provided configuration.
 
@@ -31,22 +32,28 @@ def create_mock_data(config):
 
     Parameters:
     config (dict): Configuration dictionary containing:
-        - file_path: Path to save the generated CSV.
+        - file_path: Path to save the generated CSV. Can include '{process_id}' placeholder.
         - num_rows: Number of rows to generate.
         - columns: Dictionary defining column names and their generation rules.
+    process_id (int or str, optional): Process identifier to be included in file name.
 
     Returns:
     None
     """
     for dataset in config.get("mock_data", []):
-        path = dataset["file_path"]
+        name, ext = os.path.splitext(dataset["file_path"])
+        path = f"{name}_{process_id}{ext}"
+        dataset["file_path"] = path  # opcional, para que el config se actualice si lo necesitas más adelante
+   
+        if process_id is not None:
+            path = path.format(process_id=process_id)  # reemplaza el placeholder
+
         num_rows = dataset.get("num_rows", 1000)
         columns = dataset["columns"]
 
         data = []
         base_time = datetime.now()
 
-        # Si la columna es random_unique_int_1_9999999, generamos lista única
         unique_ids = None
         for col_type in columns.values():
             if col_type.startswith("random_unique_int_"):
@@ -67,7 +74,6 @@ def create_mock_data(config):
                 elif col_type == "datetime_now_minus_random_minutes_0_100000":
                     row[col_name] = base_time - timedelta(minutes=random.randint(0, 100000))
                 elif col_type.startswith("random_unique_int_"):
-                    # Asignamos ID único de la lista
                     row[col_name] = unique_ids[i]
                 else:
                     raise ValueError(f"Unsupported column type: {col_type}")
@@ -77,6 +83,7 @@ def create_mock_data(config):
         os.makedirs(os.path.dirname(path), exist_ok=True)
         df.to_csv(path, index=False, encoding='utf-8')
         logging.info(f"Generated mock data saved to {path} with {num_rows} rows.")
+
 
 
 def setup_logging(config):
@@ -423,3 +430,61 @@ def align_types_df_to_db_schema(df, engine, schema, table_name):
     return df
 
 
+def archive_data_files(config, process_id):
+    """
+    Moves files from the data directory to an archive directory, filtering by process_id and 
+    renaming them with a timestamp to avoid overwriting.
+
+    Args:
+        config (dict): Configuration dictionary with keys:
+            - "paths": dict containing:
+                - "data_dir" (str): Path to the data directory (default "data")
+                - "archive_dir" (str): Path to the archive directory (default "data/archive")
+        process_id (str or int): Identifier used to select files related to the current process.
+
+    Logs each file moved with the new name.
+    """
+    data_dir = config.get("paths", {}).get("data_dir", "data")
+    archive_dir = config.get("paths", {}).get("archive_dir", "data/archive")
+
+    if not os.path.exists(archive_dir):
+        os.makedirs(archive_dir)
+        logging.info(f"Archive directory created at: {archive_dir}")
+
+    for filename in os.listdir(data_dir):
+        if str(process_id) not in filename:
+            continue  # Skip files not related to this process
+
+        file_path = os.path.join(data_dir, filename)
+        if os.path.isfile(file_path):
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            name, ext = os.path.splitext(filename)
+            new_filename = f"{name}_{timestamp}{ext}"
+            dest_path = os.path.join(archive_dir, new_filename)
+
+            shutil.move(file_path, dest_path)
+            logging.info(f"Moved file {filename} to archive directory as {new_filename}")
+
+def get_path_with_process_id(base_path: str, process_id: int) -> str:
+    """
+    Appends a process-specific identifier to a file path before the extension.
+
+    This function is useful when running multiple instances of an ETL process concurrently,
+    ensuring that each instance reads/writes to its own version of the file by embedding
+    the process_id into the file name.
+
+    Example:
+        base_path = "data/sales_transactions.csv"
+        process_id = 123
+        Result → "data/sales_transactions_123.csv"
+
+    Args:
+        base_path (str): Original file path (e.g., "data/file.csv").
+        process_id (int): Unique identifier for the current ETL process.
+
+    Returns:
+        str: Modified file path including the process ID.
+    """
+    logging.info(f"base path{base_path}")
+    name, ext = os.path.splitext(base_path)
+    return f"{name}_{process_id}{ext}"

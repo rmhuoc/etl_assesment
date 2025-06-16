@@ -20,6 +20,8 @@ encryption:
   columns_to_encrypt:
     - customer_id
 
+paths:
+  archive_dir: data/archive
 
 files_to_tables_tmp:
   - file_path: data/sales_transactions.csv
@@ -48,7 +50,8 @@ mock_data:
       
       
 csv:
-  chunksize: 5000
+  chunk_size: 2000
+  max_workers: 4
   
   
 tables:

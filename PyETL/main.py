@@ -1,4 +1,4 @@
-from utils.utils import setup_logging, load_config, create_mock_data, check_table_inc
+from utils.utils import setup_logging, load_config, create_mock_data, check_table_inc, archive_data_files, get_path_with_process_id
 from utils.etl_monitor import start_etl_process, end_etl_process
 from load.load import get_engine, validate_and_load_csv_file_in_chunks, incremental_insert
 from extract.extract import extract_csv 
@@ -6,6 +6,7 @@ from sqlalchemy import text
 from datetime import datetime
 from transform.transform import encrypt_dataframe, data_encryptation
 import logging
+import os
 
 
 def main():
@@ -29,14 +30,19 @@ def main():
         process_id = start_etl_process(engine, config)
         logging.info(f"ETL process started with process_id={process_id}")
 
-        # Optionally generate mock data for testing or demonstration
-        create_mock_data(config)
+        # Generate mock data for testing or demonstration
+        create_mock_data(config,process_id)
         
         # Encrypt CSV input files if required and update config paths accordingly
         for file_entry in config.get('files_to_tables_tmp', []):
-            original_file = file_entry['file_path']
-            encrypted_file = original_file.replace('.csv', '_encrypted.csv')
+            base_file = file_entry['file_path']  
+            original_file = get_path_with_process_id(base_file, process_id)  
+            logging.info(f"original file in call to encrypted  {original_file}")
+            encrypted_file = original_file.replace('.csv', '_encrypted.csv')  
+
             data_encryptation(original_file, encrypted_file, config['encryption'])
+
+            # update path for the rest of process
             file_entry['file_path'] = encrypted_file
 
         # Quick check to verify DB connection is valid before loading
@@ -45,12 +51,15 @@ def main():
         logging.info("Connection to database OK and verified.")
 
         # Read CSV files and load in chunks to avoid memory issues
-        chunk_size = config.get("csv", {}).get("chunksize", 10000)
+        chunk_size = config.get("csv", {}).get("chunk_size", 10000)
 
         for file_entry in config.get('files_to_tables_tmp', []):
-            logging.info(f"Processing file {file_entry['file_path']} into {file_entry['schema']}.{file_entry['table']} using chunks of size {chunk_size}")
+            file_path_with_pid = file_entry['file_path']  # ya tiene el process_id y el sufijo _encrypted si corresponde
+
+            logging.info(f"Processing file {file_path_with_pid} into {file_entry['schema']}.{file_entry['table']} using chunks of size {chunk_size}")
+
             validate_and_load_csv_file_in_chunks(
-                file_path=file_entry['file_path'],
+                file_path=file_path_with_pid,
                 engine=engine,
                 schema=file_entry['schema'],
                 table=file_entry['table'],
@@ -76,7 +85,7 @@ def main():
         if process_id is not None:
             # Mark ETL process completion and log summary in monitoring table
             end_etl_process(engine, config, process_id, total_loaded, error_message)
-
+            archive_data_files(config, process_id)
 
 
 if __name__ == "__main__":

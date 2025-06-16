@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.dialects.postgresql import insert
 from concurrent.futures import ThreadPoolExecutor
 import logging
+import time
 import psycopg2
 from sqlalchemy import text  
 from sqlalchemy.exc import IntegrityError
@@ -13,6 +14,7 @@ from textwrap import dedent
 import pandas as pd
 from utils.utils import check_table_tmp, sync_dataframe_with_table_schema, align_types_df_to_db_schema
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 def get_engine(db_config):
     """
@@ -31,6 +33,7 @@ def get_engine(db_config):
 def clean_strings(df):
     """
     Sanitize string columns in a DataFrame by encoding/decoding as UTF-8 to replace invalid characters.
+    it´s deprecated,
 
     Parameters:
         df (pandas.DataFrame): Input DataFrame with potential string columns.
@@ -165,107 +168,154 @@ def incremental_insert(engine, tmp_schema, tmp_table, target_schema, target_tabl
         return 0
 
 
+
+
+
+
+# def validate_and_load_csv_file_in_chunks(file_path, engine, schema, table, process_id, chunk_size, config):
+    # total_loaded = 0
+    # logging.info(f"Reading file {file_path} in chunks of {chunk_size} with max_workers={config['csv']['max_workers']}")
+    # logging.info("=== ETL Configuration ===")
+    # logging.info(f"File path: {file_path}")
+    # logging.info(f"Chunk size: {chunk_size}")
+    # logging.info(f"Max workers: {config['csv'].get('max_workers', 1)}")
+    # logging.info(f"Target schema: {schema}")
+    # logging.info(f"Target table: {table}")
+    # logging.info("==========================")
+
+    # def process_and_load_chunk(chunk, idx):
+        # logging.info(f"[Chunk-{idx}] STARTED with {len(chunk)} rows")
+
+        # Aquí puedes añadir un time.sleep(2) para simular retardo y ver la concurrencia
+        # time.sleep(2)
+
+        # Validaciones y cargas normales
+        # check_table_tmp(chunk, engine, schema, table)
+        # sync_dataframe_with_table_schema(chunk, engine, schema, table)
+        # align_types_df_to_db_schema(chunk, engine, schema, table)
+
+        # if 'timestamp' in chunk.columns:
+            # chunk['timestamp'] = pd.to_datetime(chunk['timestamp'], utc=True, errors='coerce')
+
+        # max_ts_str = config.get('validation', {}).get('max_timestamp')
+        # max_timestamp = pd.to_datetime(max_ts_str, utc=True) if max_ts_str else pd.Timestamp.utcnow()
+        # chunk = chunk[chunk['timestamp'] <= max_timestamp]
+
+        # filters = config.get('tables', {}).get(table, {}).get('filters', {})
+        # quantity_filter = filters.get('quantity', {})
+        # min_qty = quantity_filter.get('min', None)
+        # max_qty = quantity_filter.get('max', None)
+
+        # if min_qty is not None and max_qty is not None and 'quantity' in chunk.columns:
+            # chunk = chunk[(chunk['quantity'] >= min_qty) & (chunk['quantity'] <= max_qty)]
+
+        # required_columns = config.get('tables', {}).get(table, {}).get('required_columns', [])
+        # if required_columns:
+            # chunk = chunk.dropna(subset=required_columns)
+
+        # chunk["process_id"] = pd.Series([process_id] * len(chunk), dtype="Int64")
+        # load_with_copy(chunk, engine, table, schema=schema, process_id=process_id)
+
+        # logging.info(f"[Chunk-{idx}] FINISHED loading {len(chunk)} records")
+
+        # return len(chunk)
+
+    # with ThreadPoolExecutor(max_workers=config['csv']['max_workers']) as executor:
+        # futures = []
+        # for idx, chunk in enumerate(pd.read_csv(file_path, chunksize=chunk_size)):
+            # futures.append(executor.submit(process_and_load_chunk, chunk, idx))
+
+        # for future in as_completed(futures):
+            # total_loaded += future.result()
+
+    # logging.info(f"Finished loading file {file_path}. Total rows loaded: {total_loaded} (process_id={process_id})")
+    
 def validate_and_load_csv_file_in_chunks(file_path, engine, schema, table, process_id, chunk_size, config):
     """
-    Load a large CSV file into the database in chunks to optimize memory and processing time.
+    Reads a CSV file in chunks, applies validation rules to each chunk, and loads valid data into the database.
 
-    Parameters:
-        file_path (str): Path to the CSV file to load.
-        engine (sqlalchemy.engine.Engine): Database connection engine.
-        schema (str): Target database schema.
-        table (str): Target table name.
-        process_id (int): Unique identifier for this ETL run, added to each row.
-        chunk_size (int): Number of rows to read and process per chunk.
-        config (dict): Configuration dictionary with validation rules and required columns.
+    Args:
+        file_path (str): Path to the CSV file.
+        engine (sqlalchemy.Engine): SQLAlchemy engine for database connection.
+        schema (str): Target schema in the database.
+        table (str): Target table in the database.
+        process_id (int): Unique process ID to track this ETL execution.
+        chunk_size (int): Number of rows per chunk.
+        config (dict): Configuration dictionary containing validation rules, DB settings, and concurrency options.
 
-    Process:
-        - Reads the CSV file in chunks of size `chunk_size`.
-        - For each chunk:
-            * Ensures the temporary table exists and matches schema.
-            * Synchronizes DataFrame columns and types with DB schema.
-            * Filters out rows with future timestamps.
-            * Removes outliers based on configured min/max thresholds for 'quantity'.
-            * Drops rows missing required columns defined in config.
-            * Logs remaining missing values by column.
-            * Adds `process_id` column with the current process ID.
-            * Loads the chunk into the temporary table.
-        - Logs progress and total rows loaded after completion.
+    Returns:
+        None
     """
     total_loaded = 0
-    logging.info(f"Reading file {file_path} in chunks of {chunk_size}")
 
-    for chunk in pd.read_csv(file_path, chunksize=chunk_size):
-        logging.info(f"Processing chunk of {len(chunk)} rows for table {schema}.{table}")
+    logging.info(f"Reading file {file_path} in chunks of {chunk_size} with max_workers={config['csv']['max_workers']}")
+    logging.info("=== ETL Configuration ===")
+    logging.info(f"File path: {file_path}")
+    logging.info(f"Chunk size: {chunk_size}")
+    logging.info(f"Max workers: {config['csv'].get('max_workers', 1)}")
+    logging.info(f"Target schema: {schema}")
+    logging.info(f"Target table: {table}")
+    logging.info("==========================")
 
-        # 1. Validate temp table structure
+    def process_and_load_chunk(chunk, idx):
+        logging.info(f"[Chunk-{idx}] STARTED with {len(chunk)} rows")
+        time.sleep(2)  # Optional: simulate processing delay
+
+        original_len = len(chunk)
+
+        # Ensure schema compatibility
         check_table_tmp(chunk, engine, schema, table)
-
-        # 2. Synchronize dataframe columns with temp table schema
         sync_dataframe_with_table_schema(chunk, engine, schema, table)
-
-        # 3. Align data types to enable correct validations
         align_types_df_to_db_schema(chunk, engine, schema, table)
 
-        # 4. Validations and filters
-
-        # Filter out timestamps that are beyond the configured max_timestamp
-        max_ts_str = config.get('validation', {}).get('max_timestamp')
-
+        # Convert timestamps and filter out rows with future dates
         if 'timestamp' in chunk.columns:
-            # Convert to datetime with UTC
             chunk['timestamp'] = pd.to_datetime(chunk['timestamp'], utc=True, errors='coerce')
 
-        # Default to current UTC time if not set in config
-        if max_ts_str:
-            try:
-                max_timestamp = pd.to_datetime(max_ts_str, utc=True)
-            except Exception as e:
-                logging.warning(f"Invalid 'max_timestamp' in config: {max_ts_str}. Using current time. Error: {e}")
-                max_timestamp = pd.Timestamp.utcnow()
-        else:
-            max_timestamp = pd.Timestamp.utcnow()
-
-        before_filter_count = len(chunk)
+        max_ts_str = config.get('validation', {}).get('max_timestamp')
+        max_timestamp = pd.to_datetime(max_ts_str, utc=True) if max_ts_str else pd.Timestamp.utcnow()
         chunk = chunk[chunk['timestamp'] <= max_timestamp]
-        filtered_count = before_filter_count - len(chunk)
+        removed_future_dates = original_len - len(chunk)
+        if removed_future_dates > 0:
+            logging.info(f"[Chunk-{idx}] Removed {removed_future_dates} rows with timestamp in the future")
 
-        if filtered_count > 0:
-            logging.warning(f"Removed {filtered_count} rows with timestamps beyond {max_timestamp}")
-
-        # Filter out quantity outliers using config values
+        # Filter based on 'quantity' range
         filters = config.get('tables', {}).get(table, {}).get('filters', {})
         quantity_filter = filters.get('quantity', {})
-        min_qty = quantity_filter.get('min', None)
-        max_qty = quantity_filter.get('max', None)
-
+        min_qty = quantity_filter.get('min')
+        max_qty = quantity_filter.get('max')
+        before_qty = len(chunk)
         if min_qty is not None and max_qty is not None and 'quantity' in chunk.columns:
-            outliers = chunk[(chunk['quantity'] < min_qty) | (chunk['quantity'] > max_qty)]
-            if not outliers.empty:
-                logging.warning(f"Detected {len(outliers)} outlier rows in 'quantity'")
             chunk = chunk[(chunk['quantity'] >= min_qty) & (chunk['quantity'] <= max_qty)]
+            removed_qty = before_qty - len(chunk)
+            if removed_qty > 0:
+                logging.info(f"[Chunk-{idx}] Removed {removed_qty} rows due to quantity not in range [{min_qty}, {max_qty}]")
 
-        # Drop rows with missing values in required columns as per config
+        # Drop rows missing required columns
         required_columns = config.get('tables', {}).get(table, {}).get('required_columns', [])
+        before_required = len(chunk)
         if required_columns:
-            before_dropna_count = len(chunk)
             chunk = chunk.dropna(subset=required_columns)
-            dropped = before_dropna_count - len(chunk)
-            if dropped > 0:
-                logging.warning(f"Dropped {dropped} rows due to missing required columns: {required_columns}")
+            removed_required = before_required - len(chunk)
+            if removed_required > 0:
+                logging.info(f"[Chunk-{idx}] Removed {removed_required} rows missing required columns: {required_columns}")
 
-        # Log remaining missing values per column
-        missing = chunk.isnull().sum()
-        for col, count in missing.items():
-            if count > 0:
-                logging.warning(f"Chunk: Column '{col}' has {count} missing values")
-
-        # 5. Add process_id column
+        # Add process_id column
         chunk["process_id"] = pd.Series([process_id] * len(chunk), dtype="Int64")
 
-        # 6. Load chunk into the database
+        # Load chunk into the database using COPY
         load_with_copy(chunk, engine, table, schema=schema, process_id=process_id)
 
-        total_loaded += len(chunk)
-        logging.info(f"Loaded {len(chunk)} records into {schema}.{table} (total so far: {total_loaded})")
+        logging.info(f"[Chunk-{idx}] FINISHED loading {len(chunk)} records")
+        return len(chunk)
+
+    # Parallel execution with ThreadPoolExecutor
+    with ThreadPoolExecutor(max_workers=config['csv']['max_workers']) as executor:
+        futures = []
+        for idx, chunk in enumerate(pd.read_csv(file_path, chunksize=chunk_size)):
+            futures.append(executor.submit(process_and_load_chunk, chunk, idx))
+
+        for future in as_completed(futures):
+            total_loaded += future.result()
 
     logging.info(f"Finished loading file {file_path}. Total rows loaded: {total_loaded} (process_id={process_id})")
