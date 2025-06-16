@@ -158,44 +158,75 @@ def load_config(path='config/config.yaml'):
         raise
 
 
-def check_table_tmp(df, engine, schema, table_name):
+# def check_table_tmp(df, engine, schema, table_name):
+    # """
+    # Check if a temporary table exists in the database and create it if it doesn't.
+
+    # This utility is used to ensure a working table exists before loading data.
+    # It uses the schema of the provided DataFrame to infer the structure of the new table.
+
+    # - If the table already exists, nothing happens.
+    # - If it does not exist, the table is created with the appropriate columns.
+    # - If 'process_id' column is missing, it is added with integer dtype.
+
+    # Parameters:
+    # df (pd.DataFrame): DataFrame used to infer table schema.
+    # engine (sqlalchemy.Engine): SQLAlchemy engine for database connection.
+    # schema (str): Target schema in the database.
+    # table_name (str): Name of the table to check or create.
+
+    # Returns:
+    # None
+    # """
+    # inspector = inspect(engine)
+    # if not inspector.has_table(table_name, schema=schema):
+        # logging.info(f"Table {schema}.{table_name} doesn´t exist. Will be created.")
+        # if 'process_id' not in df.columns:
+            # df = df.copy()
+            # df['process_id'] = pd.Series(dtype='int')
+            
+        # df.head(0).to_sql(
+            # name=table_name,
+            # con=engine,
+            # schema=schema,
+            # if_exists='replace',
+            # index=False
+        # )
+        # logging.info(f"Table {schema}.{table_name} created sucessfylly.")
+    # else:
+        # logging.info(f"Table {schema}.{table_name} already exists.")
+        
+def check_table_tmp(engine, schema, tmp_table_name, target_schema, target_table_name):
     """
-    Check if a temporary table exists in the database and create it if it doesn't.
+    Check if a temporary table exists and create it using the structure of the target table if it doesn't.
 
-    This utility is used to ensure a working table exists before loading data.
-    It uses the schema of the provided DataFrame to infer the structure of the new table.
-
-    - If the table already exists, nothing happens.
-    - If it does not exist, the table is created with the appropriate columns.
-    - If 'process_id' column is missing, it is added with integer dtype.
+    This approach ensures that the staging (tmp) table has exactly the same schema as the final target table,
+    avoiding future type mismatches during incremental insertions.
 
     Parameters:
-    df (pd.DataFrame): DataFrame used to infer table schema.
-    engine (sqlalchemy.Engine): SQLAlchemy engine for database connection.
-    schema (str): Target schema in the database.
-    table_name (str): Name of the table to check or create.
+        engine (sqlalchemy.Engine): SQLAlchemy engine for database connection.
+        schema (str): Schema where the tmp table should be created.
+        tmp_table_name (str): Name of the temporary (staging) table.
+        target_schema (str): Schema of the target table.
+        target_table_name (str): Name of the target table.
 
     Returns:
-    None
+        None
     """
     inspector = inspect(engine)
-    if not inspector.has_table(table_name, schema=schema):
-        logging.info(f"Table {schema}.{table_name} doesn´t exist. Will be created.")
-        if 'process_id' not in df.columns:
-            df = df.copy()
-            df['process_id'] = pd.Series(dtype='int')
-            
-        df.head(0).to_sql(
-            name=table_name,
-            con=engine,
-            schema=schema,
-            if_exists='replace',
-            index=False
-        )
-        logging.info(f"Table {schema}.{table_name} created sucessfylly.")
+    if not inspector.has_table(tmp_table_name, schema=schema):
+        logging.info(f"Table {schema}.{tmp_table_name} doesn't exist. Will be created based on {target_schema}.{target_table_name}.")
+
+        create_sql = f'''
+            CREATE TABLE "{schema}"."{tmp_table_name}" (LIKE "{target_schema}"."{target_table_name}" INCLUDING ALL)
+        '''
+
+        with engine.begin() as conn:
+            conn.execute(text(create_sql))
+        logging.info(f"Table {schema}.{tmp_table_name} created successfully from {target_schema}.{target_table_name}.")
     else:
-        logging.info(f"Table {schema}.{table_name} already exists.")
-        
+        logging.info(f"Table {schema}.{tmp_table_name} already exists.")
+
 
 
 def check_table_inc(engine, tmp_schema, tmp_table, target_schema, target_table):
@@ -342,7 +373,7 @@ def sync_dataframe_with_table_schema(df, engine, schema, table_name):
     table = Table(table_name, metadata, autoload_with=engine)
     db_columns = {col.name for col in table.columns}  # Columns existing in the DB table
     df_columns = set(df.columns)                      # Columns present in the DataFrame
-    
+
     # Exclude DB-managed columns, e.g. auto-increment id
     ignored_columns = {'id'}
     db_columns -= ignored_columns
@@ -356,8 +387,12 @@ def sync_dataframe_with_table_schema(df, engine, schema, table_name):
         df[col] = None
         logging.info(f"Column '{col}' was missing in DataFrame and was added with None values.")
 
+    # Refresh db_columns set to include newly added ones (if done in prior executions)
+    inspector = inspect(engine)
+    existing_db_columns = set([col["name"] for col in inspector.get_columns(table_name, schema=schema)])
+
     # Add missing columns to the database table based on DataFrame columns
-    missing_in_db = df_columns - db_columns
+    missing_in_db = df_columns - existing_db_columns
     for col in missing_in_db:
         try:
             col_type = infer_pg_type(df[col])  # Infer PostgreSQL type from DataFrame column
@@ -367,10 +402,15 @@ def sync_dataframe_with_table_schema(df, engine, schema, table_name):
                 conn.execute(text(alter_sql))  # Execute ALTER TABLE to add new column
             logging.info(f"Column '{col}' added to {schema}.{table_name} with type {col_type}.")
         except Exception as e:
-            logging.error(f"Error adding column '{col}' to {schema}.{table_name}: {e}")
-            logging.error(traceback.format_exc())
+            if 'already exists' in str(e):
+                logging.warning(f"Column '{col}' already exists in {schema}.{table_name}. Skipping.")
+            else:
+                logging.error(f"Error adding column '{col}' to {schema}.{table_name}: {e}")
+                if logging.getLogger().isEnabledFor(logging.DEBUG):
+                    logging.debug(traceback.format_exc())
 
     return df
+
 
 
 
@@ -485,6 +525,6 @@ def get_path_with_process_id(base_path: str, process_id: int) -> str:
     Returns:
         str: Modified file path including the process ID.
     """
-    logging.info(f"base path{base_path}")
+    #logging.info(f"base path{base_path}")
     name, ext = os.path.splitext(base_path)
     return f"{name}_{process_id}{ext}"
