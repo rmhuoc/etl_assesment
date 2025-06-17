@@ -46,7 +46,8 @@ mock_data:
       customer_id: random_int_1000_1100
       product_id: random_int_200_250
       quantity: random_int_1_10
-      timestamp: datetime_now_minus_random_minutes_0_100000
+      #timestamp: datetime_now_minus_random_minutes_0_100000
+
       
       
 csv:
