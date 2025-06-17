@@ -68,7 +68,7 @@ def load_with_copy(df, engine, table_name, schema=None, process_id=None):
     from sqlalchemy import text
 
     try:
-        logging.info(f"Index name load: {df.index.name}")
+        #logging.info(f"Index name load: {df.index.name}")
         df.reset_index(drop=True, inplace=True)
         df = df.copy()
 
@@ -124,8 +124,8 @@ def load_with_copy(df, engine, table_name, schema=None, process_id=None):
         
 def incremental_insert(engine, tmp_schema, tmp_table, target_schema, target_table, unique_keys, process_id):
     """
-    Perform an incremental insert from a temporary table to the target table,
-    inserting only new rows identified by unique keys and filtered by process_id.
+    Perform an incremental insert row-by-row from a temporary table to the target table,
+    skipping rows that violate constraints and logging errors.
 
     Parameters:
         engine (sqlalchemy.engine.Engine): Database connection engine.
@@ -139,33 +139,38 @@ def incremental_insert(engine, tmp_schema, tmp_table, target_schema, target_tabl
     Returns:
         int: Number of rows inserted into the target table.
     """
+    import pandas as pd
+    inserted_rows = 0
     try:
-        where_clause = f"s.process_id = :pid"
-        not_exists_conditions = " AND ".join([
-            f"t.{col} = s.{col}" for col in unique_keys
-        ])
-        
-        insert_sql = f"""
-        INSERT INTO "{target_schema}"."{target_table}" ({", ".join([f'"{col}"' for col in unique_keys])}, process_id)
-        SELECT {", ".join([f'"{col}"' for col in unique_keys])}, process_id
-        FROM "{tmp_schema}"."{tmp_table}" s
-        WHERE {where_clause}
-        AND NOT EXISTS (
-            SELECT 1 FROM "{target_schema}"."{target_table}" t
-            WHERE {not_exists_conditions}
-        )
-        """
+        with engine.connect() as conn:
+            query = f'SELECT * FROM "{tmp_schema}"."{tmp_table}" WHERE process_id = :pid'
+            df = pd.read_sql_query(text(query), conn, params={"pid": process_id})
+
+        if df.empty:
+            logging.info("No rows found in temp table for this process_id.")
+            return 0
 
         with engine.begin() as conn:
-            result = conn.execute(text(insert_sql), {'pid': process_id})
-            inserted_rows = result.rowcount or 0  # rowcount may be None if unavailable
-            logging.info(f"Inserted {inserted_rows} new records into {target_schema}.{target_table}")
-            return inserted_rows
+            for i, row in df.iterrows():
+                try:
+                    cols = row.index.tolist()
+                    values = [row[col] for col in cols]
+                    placeholders = ', '.join([f":{col}" for col in cols])
+                    col_names = ', '.join([f'"{col}"' for col in cols])
+                    insert_stmt = f'INSERT INTO "{target_schema}"."{target_table}" ({col_names}) VALUES ({placeholders})'
+                    conn.execute(text(insert_stmt), row.to_dict())
+                    inserted_rows += 1
+                except Exception as row_e:
+                    logging.warning(f"Failed to insert row {i}: {row.to_dict()} => {row_e}")
+
+        logging.info(f"Inserted {inserted_rows} new records into {target_schema}.{target_table}")
+        return inserted_rows
 
     except Exception as e:
-        logging.error(f"Error during incremental insert (process_id={process_id}): {e}")
+        logging.error(f"Fatal error during incremental insert (process_id={process_id}): {e}")
         logging.error(traceback.format_exc())
         return 0
+
 
 
 
@@ -246,6 +251,11 @@ def validate_and_load_csv_file_in_chunks(file_path, engine, schema, table, proce
     Returns:
         None
     """
+    import pandas as pd
+    import time
+    import logging
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     total_loaded = 0
 
     logging.info(f"Reading file {file_path} in chunks of {chunk_size} with max_workers={config['csv']['max_workers']}")
@@ -259,14 +269,9 @@ def validate_and_load_csv_file_in_chunks(file_path, engine, schema, table, proce
 
     def process_and_load_chunk(chunk, idx):
         logging.info(f"[Chunk-{idx}] STARTED with {len(chunk)} rows")
-        time.sleep(2)  # Optional: simulate processing delay
+        time.sleep(2)
 
         original_len = len(chunk)
-
-        # Ensure schema compatibility
-        check_table_tmp(chunk, engine, schema, table)
-        sync_dataframe_with_table_schema(chunk, engine, schema, table)
-        align_types_df_to_db_schema(chunk, engine, schema, table)
 
         # Convert timestamps and filter out rows with future dates
         if 'timestamp' in chunk.columns:
@@ -286,19 +291,18 @@ def validate_and_load_csv_file_in_chunks(file_path, engine, schema, table, proce
         max_qty = quantity_filter.get('max')
         before_qty = len(chunk)
         if min_qty is not None and max_qty is not None and 'quantity' in chunk.columns:
+            invalid_rows = chunk[(chunk['quantity'] < min_qty) | (chunk['quantity'] > max_qty)]
+            for _, row in invalid_rows.iterrows():
+                logging.warning(f"[Chunk-{idx}] Dropped row due to quantity out of range: {row.to_dict()}")
             chunk = chunk[(chunk['quantity'] >= min_qty) & (chunk['quantity'] <= max_qty)]
-            removed_qty = before_qty - len(chunk)
-            if removed_qty > 0:
-                logging.info(f"[Chunk-{idx}] Removed {removed_qty} rows due to quantity not in range [{min_qty}, {max_qty}]")
 
         # Drop rows missing required columns
         required_columns = config.get('tables', {}).get(table, {}).get('required_columns', [])
-        before_required = len(chunk)
         if required_columns:
+            missing_required = chunk[chunk[required_columns].isnull().any(axis=1)]
+            for _, row in missing_required.iterrows():
+                logging.warning(f"[Chunk-{idx}] Dropped row missing required columns: {row.to_dict()}")
             chunk = chunk.dropna(subset=required_columns)
-            removed_required = before_required - len(chunk)
-            if removed_required > 0:
-                logging.info(f"[Chunk-{idx}] Removed {removed_required} rows missing required columns: {required_columns}")
 
         # Add process_id column
         chunk["process_id"] = pd.Series([process_id] * len(chunk), dtype="Int64")
@@ -309,10 +313,24 @@ def validate_and_load_csv_file_in_chunks(file_path, engine, schema, table, proce
         logging.info(f"[Chunk-{idx}] FINISHED loading {len(chunk)} records")
         return len(chunk)
 
-    # Parallel execution with ThreadPoolExecutor
+    reader = pd.read_csv(file_path, chunksize=chunk_size)
+    try:
+        first_chunk = next(reader)
+    except StopIteration:
+        logging.warning("CSV file is empty. No data to process.")
+        return
+
+    # Sync once: asegura compatibilidad y sincroniza esquema
+    first_chunk = sync_dataframe_with_table_schema(first_chunk, engine, schema, table)
+    first_chunk = align_types_df_to_db_schema(first_chunk, engine, schema, table)
+    reference_columns = first_chunk.columns.tolist()
+
     with ThreadPoolExecutor(max_workers=config['csv']['max_workers']) as executor:
         futures = []
-        for idx, chunk in enumerate(pd.read_csv(file_path, chunksize=chunk_size)):
+        futures.append(executor.submit(process_and_load_chunk, first_chunk, 0))
+
+        for idx, chunk in enumerate(reader, start=1):
+            chunk = chunk.reindex(columns=reference_columns)
             futures.append(executor.submit(process_and_load_chunk, chunk, idx))
 
         for future in as_completed(futures):
