@@ -17,21 +17,22 @@ project-root/
 │
 ├── data/                     # Source CSV files (should NOT be committed)
 │   └── sales_transactions.csv
+│   └── archive/              # Archived input files processed by ETL
 │
 ├── logs/                     # Log files directory, rotated nightly (should NOT be committed)
 │
-├── src/
-│   ├── extract/              # Extraction logic
-│   ├── transform/            # Encryption and transformation logic
-│   ├── load/                 # Loading and incremental logic
-│   ├── utils.py              # Utility functions (e.g., load_with_copy, schema sync)
-│   └── main.py               # Main entry point for ETL execution
+├── transform/            # Encryption and transformation logic
+├── load/                 # Loading and incremental logic
+├── utils.py              # Utility functions (e.g., load_with_copy, schema sync)
+└── main.py               # Main entry point for ETL execution
 │
 ├── generate_key.py           # Script to generate encryption key
 ├── requirements.txt          # Python dependencies
 ├── .gitignore                # Git ignore file
 └── README.md                 # This file
 
+
+All required directories such as data/, logs/ are automatically created at runtime if they do not already exist, ensuring the ETL process runs smoothly without manual setup.
 ---
 
 ## Configuration (`config/config.yaml`)
