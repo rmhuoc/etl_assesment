@@ -27,7 +27,6 @@ project-root/
 ├── utils.py                  # Utility functions (e.g., load_with_copy, schema sync)
 ├── main.py                   # Main entry point for ETL execution
 │
-├── generate_key.py           # Script to generate encryption key
 ├── requirements.txt          # Python dependencies
 ├── .gitignore                # Git ignore file
 └── README.md                 # This file
