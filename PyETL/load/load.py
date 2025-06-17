@@ -1,4 +1,3 @@
-# src/load.py
 import sqlalchemy
 from sqlalchemy import create_engine
 from sqlalchemy.dialects.postgresql import insert
@@ -15,6 +14,7 @@ import pandas as pd
 from utils.utils import sync_dataframe_with_table_schema, align_types_df_to_db_schema
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import io
 
 def get_engine(db_config):
     """
