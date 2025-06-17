@@ -12,7 +12,7 @@ import traceback
 from sqlalchemy.exc import SQLAlchemyError
 from textwrap import dedent
 import pandas as pd
-from utils.utils import check_table_tmp, sync_dataframe_with_table_schema, align_types_df_to_db_schema
+from utils.utils import sync_dataframe_with_table_schema, align_types_df_to_db_schema
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -30,20 +30,6 @@ def get_engine(db_config):
           f"{db_config['host']}:{db_config['port']}/{db_config['database']}"
     return create_engine(url)
 
-def clean_strings(df):
-    """
-    Sanitize string columns in a DataFrame by encoding/decoding as UTF-8 to replace invalid characters.
-    it´s deprecated,
-
-    Parameters:
-        df (pandas.DataFrame): Input DataFrame with potential string columns.
-
-    Returns:
-        pandas.DataFrame: DataFrame with cleaned string columns.
-    """
-    for col in df.select_dtypes(include=['object']).columns:
-        df[col] = df[col].apply(lambda x: x.encode('utf-8', 'replace').decode('utf-8', 'replace') if isinstance(x, str) else x)
-    return df
     
 def load_with_copy(df, engine, table_name, schema=None, process_id=None):
     """
@@ -63,10 +49,6 @@ def load_with_copy(df, engine, table_name, schema=None, process_id=None):
         - Loads data into the target table using PostgreSQL COPY FROM for performance.
         - Handles and logs common integrity errors.
     """
-    import io
-    import psycopg2
-    from sqlalchemy import text
-
     try:
         #logging.info(f"Index name load: {df.index.name}")
         df.reset_index(drop=True, inplace=True)
@@ -238,12 +220,11 @@ def validate_and_load_csv_file_in_chunks(file_path, engine, schema, table, proce
             missing_required = chunk[chunk[required_columns].isnull().any(axis=1)]
             for _, row in missing_required.iterrows():
             
-                # two alternative, we can remove row or we can replace null by n/a
+                # two alternative, we can remove row or do nothing
                 
                 # logging.warning(f"[Chunk-{idx}] Dropped row missing required columns: {row.to_dict()}")
             # chunk = chunk.dropna(subset=required_columns)
-                logging.warning(f"[Chunk-{idx}] Replaced missing required columns with 'n/a': {row.to_dict()}")
-            chunk[required_columns] = chunk[required_columns].fillna('n/a')
+                logging.warning(f"[Chunk-{idx}] Row contains missing required columns (logged only): {row.to_dict()}")
 
         # Add process_id column
         chunk["process_id"] = pd.Series([process_id] * len(chunk), dtype="Int64")

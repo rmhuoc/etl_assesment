@@ -3,43 +3,6 @@ from utils.encryptation import load_key, encrypt_value
 from cryptography.fernet import Fernet
 import logging
 
-def encrypt_dataframe(df, encryption_config):
-    """
-    Encrypt specified columns of a pandas DataFrame using Fernet symmetric encryption.
-
-    Parameters:
-        df (pandas.DataFrame): Input DataFrame to encrypt.
-        encryption_config (dict): Configuration dictionary with:
-            - 'enabled' (bool): Whether encryption is enabled.
-            - 'key_path' (str): File path to the encryption key.
-            - 'columns' (list of str): List of column names to encrypt.
-
-    Returns:
-        pandas.DataFrame: A copy of the DataFrame with specified columns encrypted.
-        If encryption is disabled, returns the original DataFrame unchanged.
-    """
-    if not encryption_config.get('enabled', False):
-        # Encryption not enabled - return original DataFrame
-        return df
-
-    key_path = encryption_config['key_path']
-    columns = encryption_config['columns']
-
-    # Load encryption key from file
-    key = load_key(key_path)
-    fernet = Fernet(key)
-
-    # Work on a copy to avoid modifying original DataFrame
-    df_copy = df.copy()
-
-    # Encrypt each specified column if present
-    for col in columns:
-        if col in df_copy.columns:
-            df_copy[col] = df_copy[col].apply(lambda x: encrypt_value(x, fernet))
-
-    return df_copy
-
-
 def data_encryptation(file_path, output_path, encryption_config):
     """
     Load a CSV file, encrypt specified columns, and write the result to a new CSV file.

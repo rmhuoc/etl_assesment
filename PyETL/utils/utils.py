@@ -96,12 +96,16 @@ def setup_logging(config):
     interval = config.get('logging', {}).get('interval', 1)
     backup_count = config.get('logging', {}).get('backup_count', 7)
     encoding = config.get('logging', {}).get('encoding', 'utf-8')
+    log_level_str = config.get('logging', {}).get('level', 'INFO').upper()
+    
+    # Convert to constant
+    log_level = getattr(logging, log_level_str, logging.INFO)
 
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
     logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
+    logger.setLevel(log_level)
 
     if logger.hasHandlers():
         logger.handlers.clear()
@@ -157,159 +161,6 @@ def load_config(path='config/config.yaml'):
         logging.exception(f"Unexpected error loading configuration from {path}")
         raise
 
-        
-def check_table_tmp(engine, schema, tmp_table_name, target_schema, target_table_name):
-    """
-    Check if a temporary table exists and create it using the structure of the target table if it doesn't.
-     Deprecated, is not used in code anywhere
-    This approach ensures that the staging (tmp) table has exactly the same schema as the final target table,
-    avoiding future type mismatches during incremental insertions.
-
-    Parameters:
-        engine (sqlalchemy.Engine): SQLAlchemy engine for database connection.
-        schema (str): Schema where the tmp table should be created.
-        tmp_table_name (str): Name of the temporary (staging) table.
-        target_schema (str): Schema of the target table.
-        target_table_name (str): Name of the target table.
-
-    Returns:
-        None
-    """
-    inspector = inspect(engine)
-    if not inspector.has_table(tmp_table_name, schema=schema):
-        logging.info(f"Table {schema}.{tmp_table_name} doesn't exist. Will be created based on {target_schema}.{target_table_name}.")
-
-        create_sql = f'''
-            CREATE TABLE "{schema}"."{tmp_table_name}" (LIKE "{target_schema}"."{target_table_name}" INCLUDING ALL)
-        '''
-
-        with engine.begin() as conn:
-            conn.execute(text(create_sql))
-        logging.info(f"Table {schema}.{tmp_table_name} created successfully from {target_schema}.{target_table_name}.")
-    else:
-        logging.info(f"Table {schema}.{tmp_table_name} already exists.")
-
-
-
-def check_table_inc(engine, tmp_schema, tmp_table, target_schema, target_table):
-    """
-    Ensure the target table exists and is aligned with the structure of the temporary table.
-    Deprecated, is not used in code anywhere
-
-    This function is used during incremental loads to:
-    - Create the target table if it does not exist, using the structure of the temporary table.
-
-    Parameters:
-    engine (sqlalchemy.Engine): SQLAlchemy engine connected to the database.
-    tmp_schema (str): Schema of the temporary table.
-    tmp_table (str): Name of the temporary table.
-    target_schema (str): Schema of the target table.
-    target_table (str): Name of the target table.
-
-    Returns:
-    None
-    """
-    inspector = inspect(engine)
-
-    if not inspector.has_table(target_table, schema=target_schema):
-        logging.info(f"Target table {target_schema}.{target_table} doesn't exist. Creating it based on {tmp_schema}.{tmp_table}.")
-
-        metadata = MetaData(schema=tmp_schema)
-        tmp_tbl = Table(tmp_table, metadata, autoload_with=engine)
-
-        # Create empty dataframe with columns from temp table
-        columns = [col.name for col in tmp_tbl.columns]
-        dtypes = {}
-        for col in tmp_tbl.columns:
-            if hasattr(col.type, "python_type"):
-                dtypes[col.name] = col.type.python_type
-            else:
-                dtypes[col.name] = str
-
-        df_empty = pd.DataFrame(columns=columns).astype(dtypes)
-
-        # Add process_id column if not exists
-        if "process_id" not in df_empty.columns:
-            df_empty["process_id"] = pd.Series(dtype="int")
-
-        df_empty.head(0).to_sql(
-            name=target_table,
-            con=engine,
-            schema=target_schema,
-            if_exists='replace',
-            index=False
-        )
-
-        logging.info(f"Target table {target_schema}.{target_table} created based on schema of {tmp_schema}.{tmp_table}.")
-    else:
-        logging.info(f"Target table {target_schema}.{target_table} already exists. Checking for missing columns...")
-
-        # Load columns from table
-        tmp_metadata = MetaData(schema=tmp_schema)
-        tmp_tbl = Table(tmp_table, tmp_metadata, autoload_with=engine)
-        tmp_columns = {col.name for col in tmp_tbl.columns}
-
-        tgt_metadata = MetaData(schema=target_schema)
-        tgt_tbl = Table(target_table, tgt_metadata, autoload_with=engine)
-        tgt_columns = {col.name for col in tgt_tbl.columns}
-
-        missing_in_target = tmp_columns - tgt_columns
-
-        for col in missing_in_target:
-            try:
-                alter_sql = f'ALTER TABLE "{target_schema}"."{target_table}" ADD COLUMN "{col}" TEXT'
-                with engine.begin() as conn:
-                    conn.execute(text(alter_sql))
-                logging.info(f"Column '{col}' added to {target_schema}.{target_table} from {tmp_schema}.{tmp_table}.")
-            except Exception as e:
-                logging.error(f"Could not add column '{col}' to {target_schema}.{target_table}: {e}")
-            
-def infer_pg_type(series):
-    """
-    Infer the corresponding PostgreSQL data type from a pandas Series dtype.
-
-    This function examines the data type of the given pandas Series and returns
-    an appropriate PostgreSQL column type as a string. It covers common numeric,
-    boolean, datetime, and fallback to text types.
-
-    Parameters:
-    series (pd.Series): A pandas Series whose dtype will be analyzed.
-
-    Returns:
-    str: A string representing the PostgreSQL data type inferred from the Series dtype.
-         Possible return values include:
-         - "BIGINT" for integer types,
-         - "DOUBLE PRECISION" for float types,
-         - "BOOLEAN" for boolean types,
-         - "TIMESTAMP" for datetime types,
-         - "TEXT" as a fallback for any other types.
-    """
-    if pd.api.types.is_integer_dtype(series):
-        return "BIGINT"
-    elif pd.api.types.is_float_dtype(series):
-        return "DOUBLE PRECISION"
-    elif pd.api.types.is_bool_dtype(series):
-        return "BOOLEAN"
-    elif pd.api.types.is_datetime64_any_dtype(series):
-        return "TIMESTAMP"
-    else:
-        return "TEXT"
-
-def sanitize_identifier(name):
-    """
-    Sanitize a string to be a valid SQL identifier by removing invalid characters.
-
-    This function removes any character from the input string that is not
-    an uppercase or lowercase letter, a digit, or an underscore. This ensures
-    the resulting string can safely be used as a SQL identifier (e.g., table or column name).
-
-    Parameters:
-    name (str): The input string to sanitize.
-
-    Returns:
-    str: A sanitized string containing only letters, digits, and underscores.
-    """
-    return re.sub(r'[^a-zA-Z0-9_]', '', name)
 
 def sync_dataframe_with_table_schema(df, engine, schema, table_name):
     """

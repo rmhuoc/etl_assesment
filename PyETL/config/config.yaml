@@ -44,6 +44,7 @@ mock_data:
     columns:
       transaction_id: random_unique_int_1_9999999
       customer_id: random_int_1000_1100
+      customer_id: random_int_1000_1100
       product_id: random_int_200_250
       quantity: random_int_1_10
       timestamp: datetime_now_minus_random_minutes_0_100000
@@ -77,6 +78,7 @@ logging:
   interval: 1
   backup_count: 7
   encoding: utf-8
+  level: INFO  # DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 
 

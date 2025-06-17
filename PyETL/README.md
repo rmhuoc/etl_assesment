@@ -62,7 +62,7 @@ The ETL behavior is controlled by this YAML file. Key sections include:
 ```bash
 pip install -r requirements.txt
 
-### 2. Generate Encruyptation Key
+### 2. Generate Encryptation Key
 
 If encryption is enabled in the config, generate the key and place it in the config/ folder:
 
@@ -81,7 +81,7 @@ This will create a secret.key file used for encrypting the specified columns
 ### 4.Run the ETL
  Execute the ETL pipeline:
 
-python src/main.py
+python main.py
 
 The process will:
 
