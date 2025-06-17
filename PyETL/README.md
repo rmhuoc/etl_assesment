@@ -1,38 +1,6 @@
-# ETL Project
 
-## Overview
+> All required directories such as `data/`, `logs/`, and `data/archive/` are automatically created at runtime if they do not already exist, ensuring the ETL process runs smoothly without manual setup.
 
-This project implements an ETL pipeline that loads CSV data into a PostgreSQL database, performing validations, 
-encryption, and incremental loads using chunk processing for efficiency. The pipeline is configurable via a YAML file.
-
----
-
-## Project Structure
-
-project-root/
-│
-├── config/
-│   ├── config.yaml           # Main configuration file
-│   ├── secret.key            # Encryption key (should NOT be committed)
-│
-├── data/                     # Source CSV files (should NOT be committed)
-│   └── sales_transactions.csv
-│   └── archive/              # Archived input files processed by ETL
-│
-├── logs/                     # Log files directory, rotated nightly (should NOT be committed)
-│
-├── transform/            # Encryption and transformation logic
-├── load/                 # Loading and incremental logic
-├── utils.py              # Utility functions (e.g., load_with_copy, schema sync)
-└── main.py               # Main entry point for ETL execution
-│
-├── generate_key.py           # Script to generate encryption key
-├── requirements.txt          # Python dependencies
-├── .gitignore                # Git ignore file
-└── README.md                 # This file
-
-
-All required directories such as data/, logs/ are automatically created at runtime if they do not already exist, ensuring the ETL process runs smoothly without manual setup.
 ---
 
 ## Configuration (`config/config.yaml`)
@@ -43,8 +11,8 @@ The ETL behavior is controlled by this YAML file. Key sections include:
 - **load_process**: Schemas, log table name, and sequence for process IDs.
 - **encryption**: Enable/disable encryption, key path, and columns to encrypt.
 - **files_to_tables_tmp**: CSV files and their corresponding temporary tables.
-  
-  >  Note: All tables must already exist in the database. This ETL does not create them.
+
+  > Note: All tables must already exist in the database. This ETL does not create them.
 
 - **files_to_tables_inc**: Mappings for incremental load from temp tables to target tables, with unique keys.
 - **mock_data**: Config for generating synthetic test data.
@@ -63,24 +31,25 @@ The ETL behavior is controlled by this YAML file. Key sections include:
 ```bash
 pip install -r requirements.txt
 
-### 2. Generate Encryptation Key
+
+2. Generate Encryption Key
 
 If encryption is enabled in the config, generate the key and place it in the config/ folder:
 
 python generate_key.py
 
-This will create a secret.key file used for encrypting the specified columns
-
-### 3. Prepare the Database
+This will create a secret.key file used for encrypting the specified columns.
+3. Prepare the Database
 
     Ensure the PostgreSQL database is running.
 
     Create required schemas and tables manually before the first run.
 
     Update config.yaml with the appropriate database credentials and schema names.
-	
-### 4.Run the ETL
- Execute the ETL pipeline:
+
+4. Run the ETL
+
+Execute the ETL pipeline:
 
 python main.py
 
@@ -113,9 +82,7 @@ features/* → develop → main
 
     Merge develop to main for release.
 
-    Tag the main branch with release version (e.g., v1.0.0).
-
-Tagging
+    Tag the main branch with release version:
 
 git checkout main
 git pull origin main
