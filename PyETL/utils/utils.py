@@ -157,49 +157,11 @@ def load_config(path='config/config.yaml'):
         logging.exception(f"Unexpected error loading configuration from {path}")
         raise
 
-
-# def check_table_tmp(df, engine, schema, table_name):
-    # """
-    # Check if a temporary table exists in the database and create it if it doesn't.
-
-    # This utility is used to ensure a working table exists before loading data.
-    # It uses the schema of the provided DataFrame to infer the structure of the new table.
-
-    # - If the table already exists, nothing happens.
-    # - If it does not exist, the table is created with the appropriate columns.
-    # - If 'process_id' column is missing, it is added with integer dtype.
-
-    # Parameters:
-    # df (pd.DataFrame): DataFrame used to infer table schema.
-    # engine (sqlalchemy.Engine): SQLAlchemy engine for database connection.
-    # schema (str): Target schema in the database.
-    # table_name (str): Name of the table to check or create.
-
-    # Returns:
-    # None
-    # """
-    # inspector = inspect(engine)
-    # if not inspector.has_table(table_name, schema=schema):
-        # logging.info(f"Table {schema}.{table_name} doesn´t exist. Will be created.")
-        # if 'process_id' not in df.columns:
-            # df = df.copy()
-            # df['process_id'] = pd.Series(dtype='int')
-            
-        # df.head(0).to_sql(
-            # name=table_name,
-            # con=engine,
-            # schema=schema,
-            # if_exists='replace',
-            # index=False
-        # )
-        # logging.info(f"Table {schema}.{table_name} created sucessfylly.")
-    # else:
-        # logging.info(f"Table {schema}.{table_name} already exists.")
         
 def check_table_tmp(engine, schema, tmp_table_name, target_schema, target_table_name):
     """
     Check if a temporary table exists and create it using the structure of the target table if it doesn't.
-
+     Deprecated, is not used in code anywhere
     This approach ensures that the staging (tmp) table has exactly the same schema as the final target table,
     avoiding future type mismatches during incremental insertions.
 
@@ -232,10 +194,10 @@ def check_table_tmp(engine, schema, tmp_table_name, target_schema, target_table_
 def check_table_inc(engine, tmp_schema, tmp_table, target_schema, target_table):
     """
     Ensure the target table exists and is aligned with the structure of the temporary table.
+    Deprecated, is not used in code anywhere
 
     This function is used during incremental loads to:
     - Create the target table if it does not exist, using the structure of the temporary table.
-    - Add any missing columns that exist in the temporary table but not in the target table.
 
     Parameters:
     engine (sqlalchemy.Engine): SQLAlchemy engine connected to the database.

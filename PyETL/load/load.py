@@ -170,70 +170,6 @@ def incremental_insert(engine, tmp_schema, tmp_table, target_schema, target_tabl
         logging.error(f"Fatal error during incremental insert (process_id={process_id}): {e}")
         logging.error(traceback.format_exc())
         return 0
-
-
-
-
-
-
-
-# def validate_and_load_csv_file_in_chunks(file_path, engine, schema, table, process_id, chunk_size, config):
-    # total_loaded = 0
-    # logging.info(f"Reading file {file_path} in chunks of {chunk_size} with max_workers={config['csv']['max_workers']}")
-    # logging.info("=== ETL Configuration ===")
-    # logging.info(f"File path: {file_path}")
-    # logging.info(f"Chunk size: {chunk_size}")
-    # logging.info(f"Max workers: {config['csv'].get('max_workers', 1)}")
-    # logging.info(f"Target schema: {schema}")
-    # logging.info(f"Target table: {table}")
-    # logging.info("==========================")
-
-    # def process_and_load_chunk(chunk, idx):
-        # logging.info(f"[Chunk-{idx}] STARTED with {len(chunk)} rows")
-
-        # Aquí puedes añadir un time.sleep(2) para simular retardo y ver la concurrencia
-        # time.sleep(2)
-
-        # Validaciones y cargas normales
-        # check_table_tmp(chunk, engine, schema, table)
-        # sync_dataframe_with_table_schema(chunk, engine, schema, table)
-        # align_types_df_to_db_schema(chunk, engine, schema, table)
-
-        # if 'timestamp' in chunk.columns:
-            # chunk['timestamp'] = pd.to_datetime(chunk['timestamp'], utc=True, errors='coerce')
-
-        # max_ts_str = config.get('validation', {}).get('max_timestamp')
-        # max_timestamp = pd.to_datetime(max_ts_str, utc=True) if max_ts_str else pd.Timestamp.utcnow()
-        # chunk = chunk[chunk['timestamp'] <= max_timestamp]
-
-        # filters = config.get('tables', {}).get(table, {}).get('filters', {})
-        # quantity_filter = filters.get('quantity', {})
-        # min_qty = quantity_filter.get('min', None)
-        # max_qty = quantity_filter.get('max', None)
-
-        # if min_qty is not None and max_qty is not None and 'quantity' in chunk.columns:
-            # chunk = chunk[(chunk['quantity'] >= min_qty) & (chunk['quantity'] <= max_qty)]
-
-        # required_columns = config.get('tables', {}).get(table, {}).get('required_columns', [])
-        # if required_columns:
-            # chunk = chunk.dropna(subset=required_columns)
-
-        # chunk["process_id"] = pd.Series([process_id] * len(chunk), dtype="Int64")
-        # load_with_copy(chunk, engine, table, schema=schema, process_id=process_id)
-
-        # logging.info(f"[Chunk-{idx}] FINISHED loading {len(chunk)} records")
-
-        # return len(chunk)
-
-    # with ThreadPoolExecutor(max_workers=config['csv']['max_workers']) as executor:
-        # futures = []
-        # for idx, chunk in enumerate(pd.read_csv(file_path, chunksize=chunk_size)):
-            # futures.append(executor.submit(process_and_load_chunk, chunk, idx))
-
-        # for future in as_completed(futures):
-            # total_loaded += future.result()
-
-    # logging.info(f"Finished loading file {file_path}. Total rows loaded: {total_loaded} (process_id={process_id})")
     
 def validate_and_load_csv_file_in_chunks(file_path, engine, schema, table, process_id, chunk_size, config):
     """
@@ -301,8 +237,13 @@ def validate_and_load_csv_file_in_chunks(file_path, engine, schema, table, proce
         if required_columns:
             missing_required = chunk[chunk[required_columns].isnull().any(axis=1)]
             for _, row in missing_required.iterrows():
-                logging.warning(f"[Chunk-{idx}] Dropped row missing required columns: {row.to_dict()}")
-            chunk = chunk.dropna(subset=required_columns)
+            
+                # two alternative, we can remove row or we can replace null by n/a
+                
+                # logging.warning(f"[Chunk-{idx}] Dropped row missing required columns: {row.to_dict()}")
+            # chunk = chunk.dropna(subset=required_columns)
+                logging.warning(f"[Chunk-{idx}] Replaced missing required columns with 'n/a': {row.to_dict()}")
+            chunk[required_columns] = chunk[required_columns].fillna('n/a')
 
         # Add process_id column
         chunk["process_id"] = pd.Series([process_id] * len(chunk), dtype="Int64")
