@@ -218,13 +218,9 @@ def validate_and_load_csv_file_in_chunks(file_path, engine, schema, table, proce
         required_columns = config.get('tables', {}).get(table, {}).get('required_columns', [])
         if required_columns:
             missing_required = chunk[chunk[required_columns].isnull().any(axis=1)]
-            for _, row in missing_required.iterrows():
-            
-                # two alternative, we can remove row or do nothing
-                
-                # logging.warning(f"[Chunk-{idx}] Dropped row missing required columns: {row.to_dict()}")
-            # chunk = chunk.dropna(subset=required_columns)
-                logging.warning(f"[Chunk-{idx}] Row contains missing required columns (logged only): {row.to_dict()}")
+            if not missing_required.empty:
+                logging.warning(f"[Chunk-{idx}] Contains {len(missing_required)} rows with missing required columns.")
+
 
         # Add process_id column
         chunk["process_id"] = pd.Series([process_id] * len(chunk), dtype="Int64")

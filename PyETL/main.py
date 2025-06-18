@@ -75,21 +75,11 @@ def main():
                     df_tmp.drop(columns=['id'], inplace=True)
                     logging.info("Column 'id' dropped from temp DataFrame before schema sync.")
 
-                # logging.info("estoy aqui 1")
+            
                 df_tmp = sync_dataframe_with_table_schema(df_tmp, engine, inc_entry['target_schema'], inc_entry['target_table'])
-                # logging.info("estoy aqui 2")
+          
                 df_tmp = align_types_df_to_db_schema(df_tmp, engine, inc_entry['target_schema'], inc_entry['target_table'])
-                # logging.info("estoy aqui 3")
-                # logging.info("estoy aqui 4")
-                # logging.info("estoy aqui 4.5 - just before to_sql")
-                # df_tmp.to_sql(
-                    # name=inc_entry['tmp_table'],
-                    # con=engine,
-                    # schema=inc_entry['tmp_schema'],
-                    # if_exists='replace',
-                    # index=False
-                # )
-                # logging.info("estoy aqui 5 - after to_sql")
+                
 
                 logging.info(f"Aligned and replaced temp table {inc_entry['tmp_schema']}.{inc_entry['tmp_table']} before incremental insert.")
 

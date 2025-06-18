@@ -197,8 +197,8 @@ def sync_dataframe_with_table_schema(df, engine, schema, table_name):
         if col == "process_id":
             logging.info(f"Column '{col}' is missing in DataFrame. Skipping adding it with None values here.")
             continue
-        df[col] = None
-        logging.info(f"Column '{col}' was missing in DataFrame and was added with None values.")
+        df[col] = ''
+        logging.info(f"Column '{col}' was missing in DataFrame and was added with null values.")
 
     # Refresh db_columns set to include newly added ones (if done in prior executions)
     inspector = inspect(engine)
