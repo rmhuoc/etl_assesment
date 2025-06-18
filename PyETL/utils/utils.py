@@ -1,17 +1,12 @@
 # src/utils.py
 import random
 from datetime import datetime, timedelta
-import os
-import logging
 import pandas as pd
-import random
-from datetime import datetime, timedelta
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import os
 import yaml
 from sqlalchemy import create_engine, text,inspect, Column, Table, MetaData, String, text
-import logging
 from sqlalchemy.exc import SQLAlchemyError
 import traceback
 import re
@@ -387,3 +382,26 @@ def get_path_with_process_id(base_path: str, process_id: int) -> str:
     #logging.info(f"base path{base_path}")
     name, ext = os.path.splitext(base_path)
     return f"{name}_{process_id}{ext}"
+
+
+def assert_table_exists(engine, schema, table):
+    """
+    Verifies that a specified table exists in the given database schema.
+
+    Uses SQLAlchemy's inspector to check if the table is present. 
+    Raises a RuntimeError if the table does not exist.
+
+    Args:
+        engine (sqlalchemy.engine.Engine): SQLAlchemy engine connected to the target database.
+        schema (str): Name of the schema containing the table.
+        table (str): Name of the table to check for existence.
+
+    Raises:
+        RuntimeError: If the specified table does not exist in the given schema.
+    """
+    inspector = inspect(engine)
+    if not inspector.has_table(table, schema=schema):
+        message = f"Required table {schema}.{table} does not exist."
+        logging.error(message)
+        raise RuntimeError(message)
+

@@ -1,4 +1,4 @@
-from utils.utils import setup_logging, load_config, create_mock_data, archive_data_files, get_path_with_process_id, sync_dataframe_with_table_schema, align_types_df_to_db_schema
+from utils.utils import setup_logging, load_config, create_mock_data, archive_data_files, get_path_with_process_id, sync_dataframe_with_table_schema, align_types_df_to_db_schema,assert_table_exists
 from utils.etl_monitor import start_etl_process, end_etl_process
 from load.load import get_engine, validate_and_load_csv_file_in_chunks, incremental_insert
 from sqlalchemy import text, inspect
@@ -8,10 +8,7 @@ import logging
 import os
 import pandas as pd
 
-def assert_table_exists(engine, schema, table):
-    inspector = inspect(engine)
-    if not inspector.has_table(table, schema=schema):
-        raise RuntimeError(f"Required table {schema}.{table} does not exist.")
+
 
 def main():
     process_id = None

@@ -1,20 +1,17 @@
-import sqlalchemy
-from sqlalchemy import create_engine
-from sqlalchemy.dialects.postgresql import insert
-from concurrent.futures import ThreadPoolExecutor
+import io
 import logging
 import time
-import psycopg2
-from sqlalchemy import text  
-from sqlalchemy.exc import IntegrityError
 import traceback
-from sqlalchemy.exc import SQLAlchemyError
-from textwrap import dedent
-import pandas as pd
-from utils.utils import sync_dataframe_with_table_schema, align_types_df_to_db_schema
 from datetime import datetime
+from textwrap import dedent
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import io
+import pandas as pd
+import psycopg2
+import sqlalchemy
+from sqlalchemy import create_engine, text
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from utils.utils import sync_dataframe_with_table_schema, align_types_df_to_db_schema
 
 def get_engine(db_config):
     """
