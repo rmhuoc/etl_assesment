@@ -121,7 +121,53 @@ def setup_logging(config):
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
-    
+def infer_pg_type(series):
+    """
+    Infer the corresponding PostgreSQL data type from a pandas Series dtype.
+
+    This function examines the data type of the given pandas Series and returns
+    an appropriate PostgreSQL column type as a string. It covers common numeric,
+    boolean, datetime, and fallback to text types.
+
+    Parameters:
+    series (pd.Series): A pandas Series whose dtype will be analyzed.
+
+    Returns:
+    str: A string representing the PostgreSQL data type inferred from the Series dtype.
+         Possible return values include:
+         - "BIGINT" for integer types,
+         - "DOUBLE PRECISION" for float types,
+         - "BOOLEAN" for boolean types,
+         - "TIMESTAMP" for datetime types,
+         - "TEXT" as a fallback for any other types.
+    """
+    if pd.api.types.is_integer_dtype(series):
+        return "BIGINT"
+    elif pd.api.types.is_float_dtype(series):
+        return "DOUBLE PRECISION"
+    elif pd.api.types.is_bool_dtype(series):
+        return "BOOLEAN"
+    elif pd.api.types.is_datetime64_any_dtype(series):
+        return "TIMESTAMP"
+    else:
+        return "TEXT"
+
+def sanitize_identifier(name):
+    """
+    Sanitize a string to be a valid SQL identifier by removing invalid characters.
+
+    This function removes any character from the input string that is not
+    an uppercase or lowercase letter, a digit, or an underscore. This ensures
+    the resulting string can safely be used as a SQL identifier (e.g., table or column name).
+
+    Parameters:
+    name (str): The input string to sanitize.
+
+    Returns:
+    str: A sanitized string containing only letters, digits, and underscores.
+    """
+    return re.sub(r'[^a-zA-Z0-9_]', '', name)
+   
 
 
 def load_config(path='config/config.yaml'):
