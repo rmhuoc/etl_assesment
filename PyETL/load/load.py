@@ -238,7 +238,7 @@ def validate_and_load_csv_file_in_chunks(file_path, engine, schema, table, proce
         logging.warning("CSV file is empty. No data to process.")
         return
 
-    # Sync once: asegura compatibilidad y sincroniza esquema
+    # Sync once: sync column and align types
     first_chunk = sync_dataframe_with_table_schema(first_chunk, engine, schema, table)
     first_chunk = align_types_df_to_db_schema(first_chunk, engine, schema, table)
     reference_columns = first_chunk.columns.tolist()
